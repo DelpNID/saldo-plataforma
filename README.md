@@ -28,7 +28,7 @@ Salve a planilha no Excel antes de rodar, para os valores das fórmulas estarem 
 
 ## Variáveis de ambiente
 
-Copie `.env.example` para `.env` e preencha. Na Vercel, cadastre as mesmas quatro variáveis.
+Copie `.env.example` para `.env` e preencha. Publicação na Vercel e rotina diária: [docs/publicacao.md](docs/publicacao.md).
 
 ## Telas
 
