@@ -1,0 +1,100 @@
+// Modelo de dados da Plataforma de Saldo.
+// Cada carga da planilha vira um registro em Carga; a tela sempre lê a carga ativa.
+// Trocar de carga é só virar a flag "ativa", então a tela nunca mostra dado pela metade.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Carga {
+  id             Int          @id @default(autoincrement())
+  criadaEm       DateTime     @default(now())
+  arquivo        String
+  projeto        String // nome do projeto, ex.: "Raia 7896"
+  centroCusto    String // CODCCUSTO, ex.: 3.07896.32.001
+  ativa          Boolean      @default(false)
+  totalPrevisto  Float
+  totalRealizado Float
+  totalExecucoes Float
+  totalExecPend  Float
+  tarefas        Tarefa[]
+  componentes    Componente[]
+  ordens         Ordem[]
+
+  @@index([ativa])
+}
+
+// Uma linha da aba Resumo Geral
+model Tarefa {
+  id            Int     @id @default(autoincrement())
+  cargaId       Int
+  carga         Carga   @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  ordem         Int // posição na planilha
+  codTarefa     String
+  desenho       String
+  descricao     String
+  execucoes     Float
+  execPend      Float
+  qtdPrevisto   Float
+  qtdRealizada  Float
+  avanco        Float // 0 a 1
+  prioridade    String?
+  totalComp     Int     @default(0)
+  pendMaterial  Int     @default(0) // componentes com APONTADO = 0
+  opsTotal      Int     @default(0)
+  opsComSaldo   Int     @default(0) // OPs com QTDE EFETIVADA >= QTDE PLANEJADA
+
+  @@index([cargaId, codTarefa])
+}
+
+// Uma linha da aba Componentes
+model Componente {
+  id           Int     @id @default(autoincrement())
+  cargaId      Int
+  carga        Carga   @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  codOrdem     String // OP
+  codEstrutura String
+  idAtvOrdem   Int?
+  codigoPrd    String
+  nome         String
+  unidade      String
+  qtdUsada     Float
+  apontado     Float
+  tarPai       String // Cod.Tar Pai ("RETRABALHO" quando a planilha mostra ALHO)
+  exec         String // execução ("" no retrabalho)
+  tarFilho     String // Cod.Tar Filho ("0" = material direto)
+  grupo        String // COD2, primeiros 6 dígitos do código
+  previsto     Float // QTDE PLANEJADA da OP
+  apontado2    Float // QTDE EFETIVADA da OP
+  lote         String?
+
+  @@index([cargaId, tarPai])
+  @@index([cargaId, apontado])
+  @@index([cargaId, grupo])
+}
+
+// Aba Dados resumida por OP
+model Ordem {
+  id             Int     @id @default(autoincrement())
+  cargaId        Int
+  carga          Carga   @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  op             String
+  descricao      String
+  desenho        String
+  tag            String
+  qtdPlanejada   Float
+  qtdEfetivada   Float
+  horasPrevistas Float
+  horasApontadas Float
+  atividades     Int
+  ativApontadas  Int // STATUS = APONTADA
+  ativParciais   Int // STATUS = PARCIALMENTE APONTADA
+
+  @@index([cargaId, op])
+}

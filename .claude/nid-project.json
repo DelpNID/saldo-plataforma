@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "kit_version": "0.1.0",
+  "tipo": "web",
+  "criado_em": "2026-11-14",
+  "criado_por": "luiz.castro",
+  "constitution_overrides": [
+    {
+      "principios": "6 e 7 (gates formais e red-team antes de implementar)",
+      "motivo": "MVP rápido pedido pelo responsável: 'jogo rápido, depois melhoramos'",
+      "adr": "docs/adr/20261114-1-mvp-rapido-sem-gate-formal.md"
+    }
+  ],
+  "verification_form": "vitest-playwright"
+}

@@ -1,0 +1,35 @@
+{
+  "name": "saldo-plataforma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Painel online da subida de saldo para o PCP",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "db:push": "prisma db push",
+    "carga": "tsx scripts/carga.ts",
+    "postinstall": "prisma generate",
+    "verificar": "tsx scripts/verificar.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

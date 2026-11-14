@@ -1,0 +1,18 @@
+node_modules/
+.next/
+out/
+coverage/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# segredos
+.env
+.env.*
+!.env.example
+
+# dados de projeto de cliente nunca entram no repositório
+*.xlsx
+*.xls
+*.csv
+dados/

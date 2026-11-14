@@ -1,0 +1,130 @@
+import { describe, expect, it } from "vitest";
+import {
+  compararCodigo,
+  descricaoCurta,
+  montarArvore,
+  normalizarCodTarefa,
+  resumirOrigens,
+  soOQueFalta,
+  statusMaterial,
+  statusSaldo,
+  situacaoTarefa,
+  type CompBase,
+} from "@/lib/regras";
+
+function comp(p: Partial<CompBase>): CompBase {
+  return {
+    codOrdem: "100/26",
+    codEstrutura: "03.023.0000001",
+    codigoPrd: "01.018.0000001",
+    nome: "CHAPA",
+    unidade: "KG",
+    qtdUsada: 1,
+    apontado: 0,
+    tarPai: "1.01",
+    exec: "1",
+    tarFilho: "0",
+    grupo: "01.018",
+    previsto: 1,
+    apontado2: 0,
+    ...p,
+  };
+}
+
+describe("normalizarCodTarefa", () => {
+  it("transforma ALHO (fim de RETRABALHO) em RETRABALHO", () => {
+    expect(normalizarCodTarefa("ALHO")).toBe("RETRABALHO");
+  });
+  it("transforma o 0 do XLOOKUP em material direto", () => {
+    expect(normalizarCodTarefa(0)).toBe("0");
+    expect(normalizarCodTarefa(null)).toBe("0");
+  });
+  it("mantém o código com zero à direita", () => {
+    expect(normalizarCodTarefa("1.10")).toBe("1.10");
+  });
+});
+
+describe("status", () => {
+  it("APONTADO = 0 é pendente; maior que 0 é apontado", () => {
+    expect(statusMaterial(0)).toBe("pendente");
+    expect(statusMaterial(7.5)).toBe("apontado");
+  });
+  it("saldo da OP compara efetivada com planejada", () => {
+    expect(statusSaldo(2, 2)).toBe("ok");
+    expect(statusSaldo(2, 1)).toBe("parcial");
+    expect(statusSaldo(2, 0)).toBe("sem-saldo");
+    expect(statusSaldo(0, 0)).toBe("sem-dado");
+  });
+  it("situação da tarefa pelo % de avanço", () => {
+    expect(situacaoTarefa(0)).toBe("sem-avanco");
+    expect(situacaoTarefa(0.5)).toBe("andamento");
+    expect(situacaoTarefa(1)).toBe("concluida");
+  });
+});
+
+describe("textos e ordem", () => {
+  it("corta a descrição antes de ' - Qtd.'", () => {
+    expect(descricaoCurta("DOP - GE-N-PLET / GE-S-PLET - Qtd. 1 - Cód. Tarefa 1.01")).toBe("DOP - GE-N-PLET / GE-S-PLET");
+  });
+  it("ordena 1.2 antes de 1.10 e 1.10 antes de 2.1", () => {
+    expect(["2.1", "1.10", "1.2"].sort(compararCodigo)).toEqual(["1.2", "1.10", "2.1"]);
+  });
+});
+
+describe("resumirOrigens (aba Arvore)", () => {
+  it("soma PREVISTO e APONTADO2 por tarefa filha e conta pendentes", () => {
+    const o = resumirOrigens("1.01", [
+      comp({ tarFilho: "0", previsto: 2, apontado2: 1 }),
+      comp({ tarFilho: "0", previsto: 1, apontado2: 1, apontado: 3 }),
+      comp({ tarFilho: "1.01", previsto: 1 }),
+      comp({ tarFilho: "1.30", previsto: 1 }),
+      comp({ tarFilho: "RETRABALHO", previsto: 4 }),
+    ]);
+    expect(o.map((x) => [x.tarFilho, x.tipo])).toEqual([
+      ["1.01", "propria"],
+      ["1.30", "outra"],
+      ["0", "material"],
+      ["RETRABALHO", "retrabalho"],
+    ]);
+    const material = o.find((x) => x.tipo === "material");
+    expect(material).toMatchObject({ previsto: 3, realizado: 2, componentes: 2, pendentes: 1 });
+  });
+});
+
+describe("montarArvore", () => {
+  // Raiz R consome a subestrutura S; S consome uma chapa. Execução 1.
+  const linhas = [
+    comp({ codOrdem: "1/26", codEstrutura: "R", codigoPrd: "S", nome: "SUB S", tarFilho: "1.01", apontado: 0 }),
+    comp({ codOrdem: "1/26", codEstrutura: "R", codigoPrd: "ARAME", apontado: 2 }),
+    comp({ codOrdem: "2/26", codEstrutura: "S", codigoPrd: "CHAPA", apontado: 0, previsto: 1, apontado2: 1 }),
+    comp({ codOrdem: "9/26", codEstrutura: "X", codigoPrd: "CHAPA", exec: "2" }),
+  ];
+
+  it("separa por execução e acha a raiz que ninguém consome", () => {
+    const ex = montarArvore(linhas);
+    expect(ex.map((e) => e.exec)).toEqual(["1", "2"]);
+    expect(ex[0].raizes.map((r) => r.codEstrutura)).toEqual(["R"]);
+  });
+
+  it("abre a subestrutura como filha e soma as pendências da subárvore", () => {
+    const raiz = montarArvore(linhas)[0].raizes[0];
+    const sub = raiz.itens.find((i) => i.codigoPrd === "S");
+    expect(sub?.filho?.codEstrutura).toBe("S");
+    expect(sub?.filho?.status).toBe("ok");
+    expect(raiz.pendentesTotal).toBe(2); // S não apontado na raiz + chapa em S
+    expect(raiz.status).toBe("sem-saldo");
+  });
+
+  it("não entra em laço quando a estrutura consome a si mesma", () => {
+    const ciclo = [comp({ codEstrutura: "A", codigoPrd: "B" }), comp({ codOrdem: "2/26", codEstrutura: "B", codigoPrd: "A" })];
+    const ex = montarArvore(ciclo);
+    expect(ex[0].raizes).toHaveLength(1);
+  });
+
+  it("'só o que falta' tira o que já está resolvido", () => {
+    const tudoOk = [comp({ codEstrutura: "R", codigoPrd: "ARAME", apontado: 1, previsto: 1, apontado2: 1 })];
+    expect(soOQueFalta(montarArvore(tudoOk)[0].raizes[0])).toBeNull();
+    const raiz = soOQueFalta(montarArvore(linhas)[0].raizes[0]);
+    expect(raiz?.itens.map((i) => i.codigoPrd)).toEqual(["S"]);
+  });
+});
