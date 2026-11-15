@@ -4,7 +4,7 @@ import { num, pct, quando } from "@/lib/formato";
 import { SeletorProjeto, type ProjetoOpcao } from "./SeletorProjeto";
 
 interface Props {
-  ativo: "painel" | "pendencias" | "tarefa" | "importar";
+  ativo: "painel" | "linhagem" | "pendencias" | "tarefa" | "importar";
 }
 
 async function projetos(): Promise<ProjetoOpcao[]> {
@@ -42,6 +42,7 @@ export async function Topo({ ativo }: Props) {
         <div className="top-dir">
           <nav className="nav" aria-label="Telas">
             <Link href="/" aria-current={ativo === "painel" ? "page" : undefined}>Painel</Link>
+            <Link href="/linhagem" aria-current={ativo === "linhagem" ? "page" : undefined}>Linhagem</Link>
             <Link href="/pendencias" aria-current={ativo === "pendencias" ? "page" : undefined}>Pendências</Link>
             <Link href="/importar" aria-current={ativo === "importar" ? "page" : undefined}>Atualizar</Link>
           </nav>

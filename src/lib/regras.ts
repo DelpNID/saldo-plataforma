@@ -188,22 +188,53 @@ export function tipoOrigem(pai: string, filho: string): TipoOrigem {
   return "outra";
 }
 
-/** Mesmo agrupamento da aba Arvore: soma de PREVISTO e APONTADO2 por tarefa filha. */
-export function resumirOrigens(pai: string, comps: CompBase[]): Origem[] {
+/** Totais de uma tarefa filha já somados (pela tela ou por um agrupamento no banco). */
+export type GrupoOrigem = Omit<Origem, "tipo">;
+
+/** Dá o tipo a cada tarefa filha e ordena: própria, outras tarefas, material direto, retrabalho. */
+export function agregarOrigens(pai: string, grupos: GrupoOrigem[]): Origem[] {
   const mapa = new Map<string, Origem>();
-  for (const c of comps) {
-    let o = mapa.get(c.tarFilho);
+  for (const g of grupos) {
+    let o = mapa.get(g.tarFilho);
     if (!o) {
-      o = { tarFilho: c.tarFilho, tipo: tipoOrigem(pai, c.tarFilho), previsto: 0, realizado: 0, componentes: 0, pendentes: 0 };
-      mapa.set(c.tarFilho, o);
+      o = { tarFilho: g.tarFilho, tipo: tipoOrigem(pai, g.tarFilho), previsto: 0, realizado: 0, componentes: 0, pendentes: 0 };
+      mapa.set(g.tarFilho, o);
     }
-    o.previsto += c.previsto;
-    o.realizado += c.apontado2;
-    o.componentes += 1;
-    if (statusMaterial(c.apontado) === "pendente") o.pendentes += 1;
+    o.previsto += g.previsto;
+    o.realizado += g.realizado;
+    o.componentes += g.componentes;
+    o.pendentes += g.pendentes;
   }
   const peso: Record<TipoOrigem, number> = { propria: 0, outra: 1, material: 2, retrabalho: 3 };
   return [...mapa.values()].sort((a, b) => peso[a.tipo] - peso[b.tipo] || compararCodigo(a.tarFilho, b.tarFilho));
+}
+
+/** Mesmo agrupamento da aba Arvore: soma de PREVISTO e APONTADO2 por tarefa filha. */
+export function resumirOrigens(pai: string, comps: CompBase[]): Origem[] {
+  return agregarOrigens(
+    pai,
+    comps.map((c) => ({
+      tarFilho: c.tarFilho,
+      previsto: c.previsto,
+      realizado: c.apontado2,
+      componentes: 1,
+      pendentes: statusMaterial(c.apontado) === "pendente" ? 1 : 0,
+    })),
+  );
+}
+
+export function tituloOrigem(o: Pick<Origem, "tipo" | "tarFilho">, pai: string): string {
+  if (o.tipo === "material") return "Material direto";
+  if (o.tipo === "propria") return `Fabricado nesta tarefa (${pai})`;
+  if (o.tipo === "retrabalho") return "Retrabalho";
+  return `Tarefa ${o.tarFilho}`;
+}
+
+export function descOrigem(o: Pick<Origem, "tipo">): string {
+  if (o.tipo === "material") return "Comprados, sem estrutura própria";
+  if (o.tipo === "propria") return "Subconjuntos feitos dentro deste código";
+  if (o.tipo === "retrabalho") return "Peças que passaram por retrabalho";
+  return "Subconjuntos que vêm de outro código de tarefa";
 }
 
 // ---------- Árvore de estruturas ----------

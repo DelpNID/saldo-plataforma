@@ -12,6 +12,7 @@ import {
   RETRABALHO,
   ROTULO_SALDO,
   compararCodigo,
+  descOrigem,
   descricaoCurta,
   filtrarArvore,
   filtroMostrar,
@@ -22,9 +23,9 @@ import {
   rotuloMaterial,
   statusCorte,
   statusSaldo,
+  tituloOrigem,
   type FiltroMostrar,
   type NoArvore,
-  type Origem,
 } from "@/lib/regras";
 
 export const dynamic = "force-dynamic";
@@ -38,20 +39,6 @@ interface Props {
 
 export function generateMetadata({ params }: Props): Metadata {
   return { title: `Tarefa ${decodeURIComponent(params.cod)}` };
-}
-
-function tituloOrigem(o: Origem, pai: string): string {
-  if (o.tipo === "material") return "Material direto";
-  if (o.tipo === "propria") return `Fabricado nesta tarefa (${pai})`;
-  if (o.tipo === "retrabalho") return "Retrabalho";
-  return `Tarefa ${o.tarFilho}`;
-}
-
-function descOrigem(o: Origem): string {
-  if (o.tipo === "material") return "Comprados, sem estrutura própria";
-  if (o.tipo === "propria") return "Subconjuntos feitos dentro deste código";
-  if (o.tipo === "retrabalho") return "Peças que passaram por retrabalho";
-  return "Subconjuntos que vêm de outro código de tarefa";
 }
 
 const rotuloExec = (exec: string) => (exec ? `Execução ${exec}` : "Sem execução");

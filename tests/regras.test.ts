@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  agregarOrigens,
   compararCodigo,
   descricaoCurta,
   montarArvore,
@@ -11,6 +12,7 @@ import {
   statusMaterial,
   statusSaldo,
   situacaoTarefa,
+  tituloOrigem,
   type CompBase,
 } from "@/lib/regras";
 
@@ -153,5 +155,30 @@ describe("montarArvore", () => {
     ]);
     expect(pendenciasDoCodigo(montarArvore(linhas), "sem-saldo").map((x) => x.codigo)).toEqual(["R", "X"]);
     expect(pendenciasDoCodigo(montarArvore(linhas), "nao-baixado").map((x) => x.codigo)).toEqual(["S", "CHAPA", "CHAPA"]);
+  });
+});
+
+describe("agregarOrigens (Linhagem)", () => {
+  it("dá o mesmo resultado de resumirOrigens a partir dos totais somados no banco", () => {
+    const comps = [
+      comp({ tarFilho: "1.01", previsto: 2, apontado2: 1, apontado: 0 }),
+      comp({ tarFilho: "1.01", previsto: 1, apontado2: 1, apontado: 3 }),
+      comp({ tarFilho: "0", previsto: 4, apontado2: 0, apontado: 0 }),
+      comp({ tarFilho: "1.30", previsto: 1, apontado2: 0, apontado: 0 }),
+      comp({ tarFilho: "RETRABALHO", previsto: 1, apontado2: 1, apontado: 1 }),
+    ];
+    const somados = [
+      { tarFilho: "0", previsto: 4, realizado: 0, componentes: 1, pendentes: 1 },
+      { tarFilho: "1.30", previsto: 1, realizado: 0, componentes: 1, pendentes: 1 },
+      { tarFilho: "1.01", previsto: 3, realizado: 2, componentes: 2, pendentes: 1 },
+      { tarFilho: "RETRABALHO", previsto: 1, realizado: 1, componentes: 1, pendentes: 0 },
+    ];
+    expect(agregarOrigens("1.01", somados)).toEqual(resumirOrigens("1.01", comps));
+    expect(agregarOrigens("1.01", somados).map((o) => tituloOrigem(o, "1.01"))).toEqual([
+      "Fabricado nesta tarefa (1.01)",
+      "Tarefa 1.30",
+      "Material direto",
+      "Retrabalho",
+    ]);
   });
 });

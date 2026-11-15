@@ -363,18 +363,49 @@ a.origem-linha:hover{background:var(--delp-fundo-suave);color:var(--delp-preto)}
 .no-op{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
 .no-op small{font-size:13px;color:var(--delp-texto-apoio)}
 
-/* Painel: topo parado ao rolar (comportamento 8 do handoff) */
+/* Painel: a página inteira rola (pedido em 15/11: sem caixa com rolagem própria).
+   Título, filtros e cabeçalho da lista ficam parados no topo enquanto a lista passa. */
 .lista-sec .lista-cab{position:sticky;top:var(--fixo-h,0px);z-index:2}
-@media (min-height:780px) and (min-width:821px){
-  /* janela alta: tudo fica parado até os chips e só a lista rola */
-  .tela-cheia{height:100vh;display:flex;flex-direction:column}
-  .tela-cheia>main.in{flex:1 1 auto;min-height:0}
-  .tela-cheia .lista-sec{flex:1 1 auto;min-height:0}
-  .tela-cheia .lista-card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
-  .tela-cheia .lista{flex:1 1 auto;min-height:0;overflow-y:auto}
-  .tela-cheia .lista-sec .lista-cab{position:static}
-  .tela-cheia .lista-sec .fixo{position:static}
-}
+
+/* Um pouco menor para ver mais na tela (pedido em 15/11). Botões e campos mantêm 44 px de toque. */
+:root{--delp-texto:16px;--delp-texto-apoio-tam:14px}
+h1{font-size:26px}
+.section-h h2{font-size:20px}
+.cab-pagina .resumo{font-size:16px}
+.stat{padding:8px 14px}
+.stat-v{font-size:21px}
+.stat.destaque .stat-v{font-size:28px}
+.linha{min-height:54px;padding-block:7px}
+.linha,.lista-cab{padding-inline:16px}
+.t-cod b{font-size:17px}
+.t-cod span{font-size:15px}
+.t-cod span.mono{font-size:13px}
+.num-l small,.avanco small{font-size:13px}
+.avanco b{font-size:17px}
+.nav a{font-size:15px}
+.chip-btn{font-size:14px}
+.campo{font-size:15px}
+.origem-linha{min-height:52px;padding-block:8px}
+.no>summary{min-height:48px;padding-block:4px}
+.item{padding-block:8px 10px}
+td{font-size:15px;padding:6px 14px}
+.exec-cab{font-size:18px}
+.resumo-grade dd{font-size:22px}
+.resumo-grade .destaque dd{font-size:30px}
+.lin-projeto .avanco b{font-size:26px}
+
+/* Linhagem: tarefas filhas abrem por código (sugestão do handoff para muitos códigos) */
+.lin-projeto-n{font-size:22px}
+.lin-cods>li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;align-items:center}
+.lin-cods>li>.lin-filhas{grid-column:1/-1}
+.lin-abrir{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:var(--delp-toque);min-width:var(--delp-toque);padding:0 12px;border:1px solid var(--delp-neutro-medio);border-radius:var(--delp-raio-campo);background:var(--delp-branco);cursor:pointer;font-size:14px;font-weight:600;color:var(--delp-preto);white-space:nowrap}
+.lin-abrir:after{content:"▾"}
+.lin-abrir[aria-expanded=true]{background:var(--delp-preto);border-color:var(--delp-preto);color:var(--delp-branco)}
+.lin-abrir[aria-expanded=true]:after{content:"▴"}
+.lin-abrir:hover{border-color:var(--delp-preto)}
+.lin-abrir-vazio{min-width:var(--delp-toque)}
+a.lin-filha{text-decoration:none;color:var(--delp-preto)}
+a.lin-filha:hover{border-color:var(--delp-preto);color:var(--delp-preto)}
 
 /* Código de tarefa: cabeçalho parado e controles */
 .topo-fixo{padding:0;gap:0}

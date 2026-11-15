@@ -53,7 +53,7 @@ export default async function Painel() {
   }));
 
   return (
-    <div className="tela-cheia">
+    <>
       <Topo ativo="painel" />
       <main className="in">
         <div className="cab-pagina">
@@ -101,6 +101,6 @@ export default async function Painel() {
         </ListaTarefas>
       </main>
       <Rodape arquivo={carga.arquivo} />
-    </div>
+    </>
   );
 }
