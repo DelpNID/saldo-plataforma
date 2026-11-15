@@ -129,6 +129,12 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
   return (
     <div className="importador">
       <Etapas atual={etapa} />
+      {!habilitada && (
+        <p className="aviso" role="note">
+          <b>Importação pelo site desligada.</b> Falta cadastrar a senha de importação (<span className="mono">IMPORTACAO_SENHA</span>) na Vercel.
+          Enquanto isso, a atualização é feita pelo NID com o comando de carga.
+        </p>
+      )}
       <ol className="passos">
         <li><b>Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.</li>
         <li><b>Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.</li>
@@ -226,7 +232,16 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
                 Gravando no banco… <Cronometro desde={fase.desde} />
               </span>
             )}
+            {habilitada && fase.tipo === "pronto" && !senha && !fase.erro && (
+              <span className="arquivo-d">Digite a senha de importação para liberar o botão.</span>
+            )}
           </form>
+          {!habilitada && (
+            <p className="erro" role="alert">
+              Não dá para atualizar por aqui: a importação pelo site está desligada (falta a senha de importação na Vercel). Avise o NID; os dados podem ser
+              carregados pelo comando de carga.
+            </p>
+          )}
           {fase.tipo === "pronto" && fase.erro && (
             <p className="erro" id="erro-envio" role="alert">
               {fase.erro.mensagem}

@@ -26,11 +26,6 @@ export default async function Importar() {
             </p>
           )}
         </div>
-        {!habilitada && (
-          <p className="nota">
-            <b>Importação desligada.</b> Para ligar, cadastre a variável <span className="mono">IMPORTACAO_SENHA</span> na Vercel e publique de novo.
-          </p>
-        )}
         <Importador habilitada={habilitada} />
       </main>
       <Rodape arquivo={carga?.arquivo} />
