@@ -4,16 +4,16 @@
 
 | O quê | Onde |
 |------|------|
-| Endereço | https://saldo-plataforma.vercel.app |
+| Endereço | https://saldopcpdelp.vercel.app (o antigo saldo-plataforma.vercel.app deixou de existir em 15/11/2026) |
 | Código | GitHub `DelpNID/saldo-plataforma` (privado), conta do Núcleo de Inovação |
-| Site | Vercel, time **NID - Núcleo de Inovação e Desenvolvimento**, projeto `saldo-plataforma`, região São Paulo (`gru1`) |
+| Site | Vercel, time **NID - Núcleo de Inovação e Desenvolvimento**, projeto `subidadesaldo` (renomeado de `saldo-plataforma` em 15/11/2026), região São Paulo (`gru1`) |
 | Banco | Neon, projeto `saldo-plataforma` (São Paulo) |
 
 A proteção da Vercel vale só para as prévias. A produção fica aberta na internet, mas toda tela exige a senha da equipe.
 
 ## Primeira publicação (uma vez)
 
-1. **Senhas na Vercel** — projeto `saldo-plataforma` › Settings › Environment Variables, ambiente *Production*:
+1. **Senhas na Vercel** — projeto `subidadesaldo` › Settings › Environment Variables, ambiente *Production*:
    - `ACESSO_SENHA`: a senha que o PCP vai usar (a do `.env` local ou uma nova).
    - `SESSAO_SEGREDO`: um valor aleatório novo, diferente do `.env`. Para gerar:
 
@@ -32,7 +32,7 @@ A proteção da Vercel vale só para as prévias. A produção fica aberta na in
 4. Conferir:
 
    ```bash
-   npm run verificar -- https://ENDERECO-DA-VERCEL
+   npm run verificar -- https://saldopcpdelp.vercel.app
    ```
 
 ## Rotina diária (pelo site)
