@@ -40,9 +40,14 @@ A planilha é a fonte da verdade. A carga lê os valores já calculados pelo Exc
 Projeto → código de tarefa → tarefas filhas → estruturas (OPs) → componentes.
 
 ## Padrão visual
-Layout do modelo Conecta Delp (topbar com logo, kicker, título, indicadores, cartões brancos).
-Cores e fonte da instrução corporativa: Delp Red `#CC0F10`, neutros `#EAE5DF` `#B0B0B0` preto e branco, Barlow.
-Status sempre com texto junto da cor. Texto de corpo ≥ 18px, alvo de toque ≥ 44px.
+Layout v2 (redesenho do Claude Design, handoff de 15/11/2026): barra superior com seletor de projeto,
+cabeçalho de página compacto (`.cab-pagina`), faixa de indicadores (`.stats`), blocos parados ao rolar (`.fixo`).
+CSS único em `src/app/globals.css` com tokens `--delp-*` (seção 1); a seção 6 tem os ajustes da plataforma fora do handoff.
+Cores e fonte da instrução corporativa: Delp Red `#CC0F10` só em destaque/ação, neutros `#EAE5DF` `#B0B0B0`, preto e branco,
+Barlow com reserva Inter. Situação sempre com texto: verde ok, laranja com texto preto parcial, vermelho pendente.
+Alvo de toque ≥ 44px (`--delp-toque`).
+Filtros do "Mostrar" na árvore são só de exibição (`filtrarArvore`, `pendenciasDoCodigo` em `regras.ts`): não mudam cálculo.
+Seletor de projeto mostra só o projeto ativo: vários projetos exigem mudar a regra da importação (uma carga ativa por vez).
 
 ## NUNCA faça
 - Commitar `.env`, planilha ou qualquer dado de projeto de cliente.

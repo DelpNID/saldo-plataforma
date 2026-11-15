@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Avanco } from "./Etiquetas";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Avanco, EtiquetaSituacao } from "./Etiquetas";
 import { num } from "@/lib/formato";
 import { ROTULO_SITUACAO, compararCodigo, grupoTarefa, situacaoTarefa, type SituacaoTarefa } from "@/lib/regras";
 
@@ -21,14 +21,42 @@ export interface TarefaResumo {
   opsComSaldo: number;
 }
 
-type Ordem = "codigo" | "avanco" | "pendencias";
+type Coluna = "codigo" | "avanco" | "execPend" | "opsComSaldo" | "pendMaterial";
+type Direcao = "ascending" | "descending";
 const SITUACOES: SituacaoTarefa[] = ["sem-avanco", "andamento", "concluida"];
 
-export function ListaTarefas({ tarefas }: { tarefas: TarefaResumo[] }) {
+// Primeiro clique: código e avanço do menor para o maior; números de pendência do maior para o menor
+const DIRECAO_INICIAL: Record<Coluna, Direcao> = {
+  codigo: "ascending",
+  avanco: "ascending",
+  execPend: "descending",
+  opsComSaldo: "descending",
+  pendMaterial: "descending",
+};
+
+const VALOR: Record<Exclude<Coluna, "codigo">, (t: TarefaResumo) => number> = {
+  avanco: (t) => t.avanco,
+  execPend: (t) => t.execPend,
+  opsComSaldo: (t) => t.opsComSaldo,
+  pendMaterial: (t) => t.pendMaterial,
+};
+
+export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; children?: ReactNode }) {
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState<SituacaoTarefa | "todas">("todas");
   const [grupo, setGrupo] = useState("todos");
-  const [ordem, setOrdem] = useState<Ordem>("codigo");
+  const [ordem, setOrdem] = useState<{ coluna: Coluna; direcao: Direcao }>({ coluna: "codigo", direcao: "ascending" });
+  const secao = useRef<HTMLElement>(null);
+  const fixo = useRef<HTMLDivElement>(null);
+
+  // O cabeçalho da lista para logo abaixo do bloco fixo (título + filtros)
+  useEffect(() => {
+    const el = fixo.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => secao.current?.style.setProperty("--fixo-h", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const grupos = useMemo(() => [...new Set(tarefas.map((t) => grupoTarefa(t.cod)))].sort(compararCodigo), [tarefas]);
   const contagem = useMemo(() => {
@@ -45,50 +73,73 @@ export function ListaTarefas({ tarefas }: { tarefas: TarefaResumo[] }) {
         (grupo === "todos" || grupoTarefa(t.cod) === grupo) &&
         (!q || t.cod.toLowerCase().includes(q) || t.descricao.toLowerCase().includes(q) || t.desenho.toLowerCase().includes(q)),
     );
-    if (ordem === "avanco") l.sort((a, b) => a.avanco - b.avanco || compararCodigo(a.cod, b.cod));
-    else if (ordem === "pendencias") l.sort((a, b) => b.pendMaterial - a.pendMaterial || compararCodigo(a.cod, b.cod));
-    else l.sort((a, b) => compararCodigo(a.cod, b.cod));
+    const sinal = ordem.direcao === "ascending" ? 1 : -1;
+    if (ordem.coluna === "codigo") l.sort((a, b) => sinal * compararCodigo(a.cod, b.cod));
+    else {
+      const v = VALOR[ordem.coluna];
+      l.sort((a, b) => sinal * (v(a) - v(b)) || compararCodigo(a.cod, b.cod));
+    }
     return l;
   }, [tarefas, busca, situacao, grupo, ordem]);
 
+  const ordenar = (coluna: Coluna) =>
+    setOrdem((o) =>
+      o.coluna === coluna ? { coluna, direcao: o.direcao === "ascending" ? "descending" : "ascending" } : { coluna, direcao: DIRECAO_INICIAL[coluna] },
+    );
+  const botaoOrdena = (coluna: Coluna, rotulo: string) => (
+    <button className="ordena" type="button" aria-sort={ordem.coluna === coluna ? ordem.direcao : undefined} onClick={() => ordenar(coluna)}>
+      {rotulo}
+    </button>
+  );
+  const limpar = () => {
+    setBusca("");
+    setGrupo("todos");
+    setSituacao("todas");
+  };
+
   return (
-    <>
-      <div className="filtros">
-        <label className="sr" htmlFor="busca">Buscar código de tarefa</label>
-        <input id="busca" className="campo busca" type="search" placeholder="Buscar por código, descrição ou desenho" value={busca} onChange={(e) => setBusca(e.target.value)} />
-        <label className="sr" htmlFor="grupo">Grupo</label>
-        <select id="grupo" className="campo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
-          <option value="todos">Todos os grupos</option>
-          {grupos.map((g) => (
-            <option key={g} value={g}>Grupo {g}</option>
-          ))}
-        </select>
-        <label className="sr" htmlFor="ordem">Ordenar</label>
-        <select id="ordem" className="campo" value={ordem} onChange={(e) => setOrdem(e.target.value as Ordem)}>
-          <option value="codigo">Ordem: código</option>
-          <option value="avanco">Ordem: menor avanço</option>
-          <option value="pendencias">Ordem: mais pendências</option>
-        </select>
-      </div>
-      <div className="chips" role="group" aria-label="Situação">
-        {(["todas", ...SITUACOES] as const).map((s) => (
-          <button key={s} type="button" className="chip-btn" aria-pressed={situacao === s} onClick={() => setSituacao(s)}>
-            {s === "todas" ? "Todas" : ROTULO_SITUACAO[s]} <span className="n">{contagem[s] ?? 0}</span>
-          </button>
-        ))}
+    <section className="lista-sec" aria-labelledby="t-tarefas" ref={secao}>
+      <div className="fixo" ref={fixo}>
+        <div className="section-h">
+          <h2 id="t-tarefas">Códigos de tarefa</h2>
+          <p>Clique num código para abrir as tarefas filhas, as estruturas e os componentes.</p>
+        </div>
+        <div className="filtros">
+          <label className="sr" htmlFor="busca">Buscar código de tarefa</label>
+          <input id="busca" className="campo busca" type="search" placeholder="Buscar por código, descrição ou desenho" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <label className="sr" htmlFor="grupo">Grupo</label>
+          <select id="grupo" className="campo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
+            <option value="todos">Todos os grupos</option>
+            {grupos.map((g) => (
+              <option key={g} value={g}>Grupo {g}</option>
+            ))}
+          </select>
+          <div className="chips" role="group" aria-label="Situação">
+            {(["todas", ...SITUACOES] as const).map((s) => (
+              <button key={s} type="button" className="chip-btn" aria-pressed={situacao === s} onClick={() => setSituacao(s)}>
+                {s === "todas" ? "Todas" : ROTULO_SITUACAO[s]} <span className="n">{num(contagem[s] ?? 0)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="card">
-        <div className="lista-cab" aria-hidden="true">
-          <span>Código de tarefa</span>
-          <span>Avanço do saldo</span>
-          <span>Execuções</span>
-          <span>OPs com saldo</span>
-          <span>Pendentes de baixa</span>
+      <div className="card lista-card">
+        <div className="lista-cab">
+          {botaoOrdena("codigo", "Código de tarefa")}
+          <span>Situação</span>
+          {botaoOrdena("avanco", "Avanço do saldo")}
+          {botaoOrdena("execPend", "Execuções")}
+          {botaoOrdena("opsComSaldo", "OPs com saldo")}
+          {botaoOrdena("pendMaterial", "Pendentes de baixa")}
           <span />
         </div>
         {visiveis.length === 0 ? (
-          <p className="vazio">Nenhum código de tarefa com esse filtro.</p>
+          <div className="vazio">
+            <b>Nenhum código de tarefa com esses filtros</b>
+            <span>Mude a busca, o grupo ou a situação.</span>
+            <button className="btn sec" type="button" onClick={limpar}>Limpar filtros</button>
+          </div>
         ) : (
           <ul className="lista">
             {visiveis.map((t) => (
@@ -98,6 +149,9 @@ export function ListaTarefas({ tarefas }: { tarefas: TarefaResumo[] }) {
                     <b>{t.cod}</b>
                     <span>{t.descricao}</span>
                     <span className="mono">{t.desenho}</span>
+                  </span>
+                  <span>
+                    <EtiquetaSituacao avanco={t.avanco} />
                   </span>
                   <Avanco valor={t.avanco} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
                   <span className="num-l">
@@ -119,7 +173,8 @@ export function ListaTarefas({ tarefas }: { tarefas: TarefaResumo[] }) {
           </ul>
         )}
       </div>
-      <p className="nota">Mostrando {num(visiveis.length)} de {num(tarefas.length)} códigos de tarefa.</p>
-    </>
+      <p className="nota" aria-live="polite">Mostrando {num(visiveis.length)} de {num(tarefas.length)} códigos de tarefa.</p>
+      {children}
+    </section>
   );
 }

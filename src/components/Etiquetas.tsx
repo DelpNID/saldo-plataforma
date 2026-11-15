@@ -1,7 +1,14 @@
-import { ROTULO_SALDO, type StatusSaldo } from "@/lib/regras";
+import { ROTULO_SALDO, ROTULO_SITUACAO, rotuloMaterial, situacaoTarefa, type SituacaoTarefa, type StatusSaldo } from "@/lib/regras";
 import { pct } from "@/lib/formato";
 
 const CLASSE_SALDO: Record<StatusSaldo, string> = { ok: "ok", parcial: "parcial", "sem-saldo": "pend", "sem-dado": "neutro" };
+const CLASSE_SITUACAO: Record<SituacaoTarefa, string> = { concluida: "ok", andamento: "parcial", "sem-avanco": "pend" };
+
+/** Situação do código de tarefa pelo avanço do saldo (mesma regra das contagens do Painel). */
+export function EtiquetaSituacao({ avanco }: { avanco: number }) {
+  const s = situacaoTarefa(avanco);
+  return <span className={`tag ${CLASSE_SITUACAO[s]}`}>{ROTULO_SITUACAO[s]}</span>;
+}
 
 export function EtiquetaSaldo({ status }: { status: StatusSaldo }) {
   return <span className={`tag ${CLASSE_SALDO[status]}`}>{ROTULO_SALDO[status]}</span>;
@@ -9,10 +16,13 @@ export function EtiquetaSaldo({ status }: { status: StatusSaldo }) {
 
 /** Material: todas as linhas apontadas, nenhuma, ou parte delas (quando a peça aparece em mais de uma OP). */
 export function EtiquetaMaterial({ pendentes, linhas, prefixo }: { pendentes: number; linhas: number; prefixo?: string }) {
-  const p = prefixo ? `${prefixo} ` : "";
-  if (pendentes === 0) return <span className="tag ok">{p}Apontado</span>;
-  if (pendentes >= linhas) return <span className="tag pend">{p}Não apontado</span>;
-  return <span className="tag parcial">{p}Falta em {pendentes} de {linhas} OPs</span>;
+  const r = rotuloMaterial(pendentes, linhas);
+  return (
+    <span className={`tag ${r.classe}`}>
+      {prefixo ? `${prefixo} ` : ""}
+      {r.texto}
+    </span>
+  );
 }
 
 export function Avanco({ valor, rotulo }: { valor: number; rotulo?: string }) {

@@ -4,8 +4,10 @@ import {
   descricaoCurta,
   montarArvore,
   normalizarCodTarefa,
+  filtrarArvore,
+  filtroMostrar,
+  pendenciasDoCodigo,
   resumirOrigens,
-  soOQueFalta,
   statusMaterial,
   statusSaldo,
   situacaoTarefa,
@@ -121,10 +123,35 @@ describe("montarArvore", () => {
     expect(ex[0].raizes).toHaveLength(1);
   });
 
-  it("'só o que falta' tira o que já está resolvido", () => {
+  it("'Mostrar' só o que não foi baixado mantém os níveis acima", () => {
     const tudoOk = [comp({ codEstrutura: "R", codigoPrd: "ARAME", apontado: 1, previsto: 1, apontado2: 1 })];
-    expect(soOQueFalta(montarArvore(tudoOk)[0].raizes[0])).toBeNull();
-    const raiz = soOQueFalta(montarArvore(linhas)[0].raizes[0]);
+    expect(filtrarArvore(montarArvore(tudoOk)[0].raizes[0], "nao-baixado")).toBeNull();
+    const raiz = filtrarArvore(montarArvore(linhas)[0].raizes[0], "nao-baixado");
+    // ARAME está apontado e sai; S fica (não apontado no pai) com a chapa pendente
     expect(raiz?.itens.map((i) => i.codigoPrd)).toEqual(["S"]);
+    expect(raiz?.itens[0].filho?.itens.map((i) => i.codigoPrd)).toEqual(["CHAPA"]);
+  });
+
+  it("'Mostrar' só o que falta subir saldo pega Sem saldo e OP sem dado", () => {
+    const raiz = filtrarArvore(montarArvore(linhas)[0].raizes[0], "sem-saldo");
+    // R está sem saldo e fica; S tem saldo subido e sai com a chapa
+    expect(raiz?.codEstrutura).toBe("R");
+    expect(raiz?.itens).toEqual([]);
+    const semDado = [comp({ codEstrutura: "Z", codigoPrd: "ARAME", apontado: 1, previsto: 0, apontado2: 0 })];
+    expect(filtrarArvore(montarArvore(semDado)[0].raizes[0], "sem-saldo")?.status).toBe("sem-dado");
+    expect(filtroMostrar("qualquer")).toBe("tudo");
+  });
+
+  it("'Pendências do código' lista estruturas e componentes pendentes de todas as execuções", () => {
+    const l = pendenciasDoCodigo(montarArvore(linhas), "tudo");
+    expect(l.map((x) => `${x.exec}:${x.tipo}:${x.codigo}`)).toEqual([
+      "1:estrutura:R", // sem saldo
+      "1:estrutura:S", // no pai: não apontado
+      "1:componente:CHAPA",
+      "2:estrutura:X", // sem saldo
+      "2:componente:CHAPA",
+    ]);
+    expect(pendenciasDoCodigo(montarArvore(linhas), "sem-saldo").map((x) => x.codigo)).toEqual(["R", "X"]);
+    expect(pendenciasDoCodigo(montarArvore(linhas), "nao-baixado").map((x) => x.codigo)).toEqual(["S", "CHAPA", "CHAPA"]);
   });
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Copiar } from "./Acoes";
 import { EtiquetaMaterial, EtiquetaSaldo } from "./Etiquetas";
 import { dataCurta, num } from "@/lib/formato";
 import {
@@ -39,13 +40,31 @@ export interface Cortes {
 
 export const chaveCorte = (op: string, plano: string) => `${op}|${plano}`;
 
-const CLASSE_CORTE: Record<StatusCorte, string> = { apontado: "ok", parcial: "parcial", pendente: "pend" };
+export const CLASSE_CORTE: Record<StatusCorte, string> = { apontado: "ok", parcial: "parcial", pendente: "pend" };
 const MAX_PLANOS = 4;
 
-function rotuloOps(ops: { op: string }[]): string {
-  if (ops.length === 0) return "sem OP";
-  if (ops.length <= 3) return `OP ${ops.map((o) => o.op).join(", ")}`;
-  return `${ops.length} OPs (${ops.slice(0, 2).map((o) => o.op).join(", ")}…)`;
+/** OP da estrutura (tocar para copiar). Com mais de uma OP, mostra a primeira e "+N". */
+export function OpsDaEstrutura({ ops }: { ops: string[] }) {
+  if (ops.length === 0) return <span className="no-op">sem OP</span>;
+  return (
+    <span className="no-op">
+      <Copiar valor={ops[0]} tipo="OP" />
+      {ops.length > 1 && <small title={ops.slice(1).join(", ")}>+{ops.length - 1} OPs</small>}
+    </span>
+  );
+}
+
+/** Cabeçalho das colunas da árvore. */
+export function CabecalhoArvore() {
+  return (
+    <div className="arvore-cab" aria-hidden="true">
+      <span>Estrutura</span>
+      <span>OP</span>
+      <span>Saldo</span>
+      <span>Pend.</span>
+      <span>Situação</span>
+    </div>
+  );
 }
 
 /** Estrutura (OP) com seus componentes. Componentes que são estruturas desta execução abrem como filhos. */
@@ -53,13 +72,18 @@ export function NoEstrutura({ no, nivel, pai, item, cortes }: { no: NoArvore; ni
   return (
     <details className="no" open={nivel === 0}>
       <summary>
-        <EtiquetaSaldo status={no.status} />
-        {item && <EtiquetaMaterial pendentes={item.pendentes} linhas={item.linhas} prefixo="No pai:" />}
-        <span className="no-cod mono">{no.codEstrutura}</span>
-        <span className="no-nome">{no.nome}</span>
-        <span className="no-meta">
-          {rotuloOps(no.ops)} · saldo {num(no.efetivada, 2)} de {num(no.planejada, 2)}
-          {no.pendentesTotal > 0 ? ` · ${num(no.pendentesTotal)} pendentes de baixa` : ""}
+        <span className="no-id">
+          <span className="no-cod mono">{no.codEstrutura}</span>
+          <span className="no-nome">{no.nome}</span>
+        </span>
+        <OpsDaEstrutura ops={no.ops.map((o) => o.op)} />
+        <span className="no-saldo mono">
+          {num(no.efetivada, 2)} de {num(no.planejada, 2)}
+        </span>
+        <b className="no-pend">{no.pendentesTotal > 0 ? num(no.pendentesTotal) : ""}</b>
+        <span className="no-sit">
+          <EtiquetaSaldo status={no.status} />
+          {item && <EtiquetaMaterial pendentes={item.pendentes} linhas={item.linhas} prefixo="No pai:" />}
         </span>
       </summary>
       <ul className="itens">
@@ -78,17 +102,20 @@ function Item({ it, pai, cortes }: { it: ItemArvore; pai: string; cortes?: Corte
   const variasOps = new Set(it.planos.map((p) => p.op)).size > 1;
   return (
     <div className="item">
-      <EtiquetaMaterial pendentes={it.pendentes} linhas={it.linhas} />
-      <span className="mono">{it.codigoPrd}</span>
-      <span className="item-nome">{it.nome}</span>
-      <span className="item-qtd">
-        Usado {num(it.qtdUsada, 3)} {it.unidade} · apontado {num(it.apontado, 3)}
-      </span>
-      {outraTarefa && (
-        <Link className="item-link" href={`/tarefa/${encodeURIComponent(it.tarFilho)}`}>
-          {it.tarFilho === RETRABALHO ? "Vem do retrabalho ›" : `Fabricado na tarefa ${it.tarFilho} ›`}
-        </Link>
-      )}
+      <div className="item-cab">
+        <span className="rotulo">Componente</span>
+        <EtiquetaMaterial pendentes={it.pendentes} linhas={it.linhas} />
+        <Copiar valor={it.codigoPrd} tipo="Código" />
+        <span className="item-nome">{it.nome}</span>
+        <span className="item-qtd">
+          Usado {num(it.qtdUsada, 3)} {it.unidade} · apontado {num(it.apontado, 3)}
+        </span>
+        {outraTarefa && (
+          <Link className="item-link" href={`/tarefa/${encodeURIComponent(it.tarFilho)}`}>
+            {it.tarFilho === RETRABALHO ? "Vem do retrabalho ›" : `Fabricado na tarefa ${it.tarFilho} ›`}
+          </Link>
+        )}
+      </div>
       {it.planos.length > 0 && (
         <ul className="cortes" aria-label="Plano de corte">
           {it.planos.slice(0, MAX_PLANOS).map((p) => (
@@ -100,6 +127,7 @@ function Item({ it, pai, cortes }: { it: ItemArvore; pai: string; cortes?: Corte
       {it.planos.length === 0 && usaPlanoDeCorte(it.nome) && (
         <ul className="cortes" aria-label="Plano de corte">
           <li className="corte">
+            <span className="rotulo">Plano de corte</span>
             <span className="tag neutro">Sem plano de corte</span>
             <span className="corte-meta">coluna CNC vazia: sem CNC ou PA/PC para esta OP na aba CNC_PCQ</span>
           </li>
@@ -120,6 +148,7 @@ function Corte({ op, plano, cortes, unidade, mostrarOp }: { op: string; plano: s
   if (!info) {
     return (
       <li className="corte">
+        <span className="rotulo">Plano de corte</span>
         {rotuloPlano}
         <span className="tag neutro">Fora da aba CNC_PCQ</span>
         <span className="corte-meta">{mostrarOp ? `OP ${op} · ` : ""}plano informado na coluna CNC, sem linha no controle de CNC</span>
@@ -127,20 +156,44 @@ function Corte({ op, plano, cortes, unidade, mostrarOp }: { op: string; plano: s
     );
   }
   const st = statusCorte(info.qtdPrev, info.qtdApont);
-  const partes = [
-    `${mostrarOp ? `OP ${op}: ` : ""}corte ${num(info.qtdApont)} de ${num(info.qtdPrev)} pç`,
-    info.statusOp ? `OP ${info.statusOp.toLowerCase()}` : "",
-    resumo ? `plano com ${num(resumo.cortadas)} de ${num(resumo.ops)} OPs cortadas` : "",
-    info.lote ? `lote ${info.lote}` : "",
-    info.qtdMpFinal > 0 ? `MP da OP ${num(info.qtdMpFinal, 1)} ${unidade}` : "",
-    info.qtdSucata > 0 ? `sucata do plano ${num(info.qtdSucata, 1)} ${unidade}` : "",
-    info.criadoEm ? `criado em ${dataCurta(info.criadoEm)}` : "",
-  ].filter(Boolean);
+  const meta = [`${mostrarOp ? `OP ${op}: ` : ""}corte ${num(info.qtdApont)} de ${num(info.qtdPrev)} pç`, info.statusOp ? `OP ${info.statusOp.toLowerCase()}` : ""]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <li className="corte">
+      <span className="rotulo">Plano de corte</span>
       {rotuloPlano}
       <span className={`tag ${CLASSE_CORTE[st]}`}>{ROTULO_CORTE[st]}</span>
-      <span className="corte-meta">{partes.join(" · ")}</span>
+      <span className="corte-meta">{meta}</span>
+      <details className="corte-detalhes">
+        <summary>Ver detalhes</summary>
+        <dl>
+          {resumo && (
+            <div>
+              <dt className="rotulo">Plano</dt>
+              <dd>
+                {num(resumo.cortadas)} de {num(resumo.ops)} OPs cortadas
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt className="rotulo">Lote</dt>
+            <dd>{info.lote ?? "–"}</dd>
+          </div>
+          <div>
+            <dt className="rotulo">MP da OP</dt>
+            <dd>{info.qtdMpFinal > 0 ? `${num(info.qtdMpFinal, 1)} ${unidade}` : "–"}</dd>
+          </div>
+          <div>
+            <dt className="rotulo">Sucata do plano</dt>
+            <dd>{info.qtdSucata > 0 ? `${num(info.qtdSucata, 1)} ${unidade}` : "–"}</dd>
+          </div>
+          <div>
+            <dt className="rotulo">Criado em</dt>
+            <dd>{info.criadoEm ? dataCurta(info.criadoEm) : "–"}</dd>
+          </div>
+        </dl>
+      </details>
     </li>
   );
 }

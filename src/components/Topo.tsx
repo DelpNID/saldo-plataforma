@@ -1,13 +1,29 @@
 import Link from "next/link";
-import { quando } from "@/lib/formato";
+import { prisma } from "@/lib/db";
+import { num, pct, quando } from "@/lib/formato";
+import { SeletorProjeto, type ProjetoOpcao } from "./SeletorProjeto";
 
 interface Props {
   ativo: "painel" | "pendencias" | "tarefa" | "importar";
-  projeto?: string;
-  atualizado?: Date;
 }
 
-export function Topo({ ativo, projeto, atualizado }: Props) {
+async function projetos(): Promise<ProjetoOpcao[]> {
+  const cargas = await prisma.carga.findMany({ where: { ativa: true }, orderBy: { id: "desc" } });
+  return Promise.all(
+    cargas.map(async (c) => ({
+      id: c.id,
+      nome: c.projeto,
+      centroCusto: c.centroCusto,
+      avanco: pct(c.totalPrevisto > 0 ? c.totalRealizado / c.totalPrevisto : 0),
+      pendentes: num(await prisma.componente.count({ where: { cargaId: c.id, apontado: { lte: 0 } } })),
+      atualizado: quando(c.criadaEm),
+    })),
+  );
+}
+
+/** Barra superior: marca, projeto (com a data da última carga), menu e Sair. */
+export async function Topo({ ativo }: Props) {
+  const opcoes = await projetos();
   return (
     <header className="topbar">
       <div className="in">
@@ -22,17 +38,13 @@ export function Topo({ ativo, projeto, atualizado }: Props) {
             Paixão em fabricar<b>Subida de saldo</b>
           </span>
         </Link>
-        <nav className="nav" aria-label="Telas">
-          <Link href="/" aria-current={ativo === "painel" ? "page" : undefined}>Painel</Link>
-          <Link href="/pendencias" aria-current={ativo === "pendencias" ? "page" : undefined}>Pendências</Link>
-          <Link href="/importar" aria-current={ativo === "importar" ? "page" : undefined}>Atualizar</Link>
-        </nav>
+        {opcoes.length > 0 && <SeletorProjeto atualId={opcoes[0].id} opcoes={opcoes} />}
         <div className="top-dir">
-          {projeto && atualizado && (
-            <span className="chip" title="Data da última carga da planilha">
-              {projeto} · atualizado {quando(atualizado)}
-            </span>
-          )}
+          <nav className="nav" aria-label="Telas">
+            <Link href="/" aria-current={ativo === "painel" ? "page" : undefined}>Painel</Link>
+            <Link href="/pendencias" aria-current={ativo === "pendencias" ? "page" : undefined}>Pendências</Link>
+            <Link href="/importar" aria-current={ativo === "importar" ? "page" : undefined}>Atualizar</Link>
+          </nav>
           <form action="/api/sair" method="post">
             <button className="btn-sair" type="submit">Sair</button>
           </form>

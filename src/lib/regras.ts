@@ -37,6 +37,13 @@ export function statusMaterial(apontado: number): StatusMaterial {
   return apontado > 0 ? "apontado" : "pendente";
 }
 
+/** Texto do material: todas as linhas apontadas, nenhuma, ou parte delas (peça em mais de uma OP). */
+export function rotuloMaterial(pendentes: number, linhas: number): { classe: "ok" | "pend" | "parcial"; texto: string } {
+  if (pendentes === 0) return { classe: "ok", texto: "Apontado" };
+  if (pendentes >= linhas) return { classe: "pend", texto: "Não apontado" };
+  return { classe: "parcial", texto: `Falta em ${pendentes} de ${linhas} OPs` };
+}
+
 export type StatusSaldo = "ok" | "parcial" | "sem-saldo" | "sem-dado";
 
 /** Saldo da OP: QTDE EFETIVADA comparada com QTDE PLANEJADA (aba Dados). */
@@ -331,13 +338,114 @@ export function montarArvore(comps: CompBase[], nomeOp: (op: string) => string |
   return execs.sort((a, b) => numero(a.exec) - numero(b.exec) || a.exec.localeCompare(b.exec));
 }
 
-/** Remove da árvore o que já está resolvido (saldo subido e material apontado). */
-export function soOQueFalta(no: NoArvore): NoArvore | null {
+// ---------- Filtros de exibição ("Mostrar") — só escolhem o que aparece, não mudam cálculo ----------
+
+/**
+ * tudo: sem filtro.
+ * nao-baixado: componente "Não apontado" e estrutura com "No pai: Não apontado" (APONTADO = 0 em alguma OP).
+ * sem-saldo: estrutura com "Sem saldo" ou "OP sem dado".
+ */
+export type FiltroMostrar = "tudo" | "nao-baixado" | "sem-saldo";
+
+export function filtroMostrar(v: unknown): FiltroMostrar {
+  return v === "nao-baixado" || v === "sem-saldo" ? v : "tudo";
+}
+
+/** Estrutura que ainda precisa subir saldo. */
+export function faltaSubirSaldo(status: StatusSaldo): boolean {
+  return status === "sem-saldo" || status === "sem-dado";
+}
+
+/** A estrutura passa no filtro por ela mesma? (`item` = a linha dela na estrutura de cima) */
+function estruturaPassa(no: NoArvore, item: ItemArvore | undefined, filtro: FiltroMostrar): boolean {
+  if (filtro === "nao-baixado") return !!item && item.pendentes > 0; // mesma contagem da etiqueta "No pai"
+  if (filtro === "sem-saldo") return faltaSubirSaldo(no.status);
+  return true;
+}
+
+/** Componente (sem estrutura própria) passa no filtro? Material não tem saldo de OP, então só entra em "não baixado". */
+function componentePassa(it: ItemArvore, filtro: FiltroMostrar): boolean {
+  if (filtro === "nao-baixado") return it.pendentes > 0;
+  return filtro === "tudo";
+}
+
+/** Filtra a árvore. Os níveis acima de um item que passa continuam visíveis. */
+export function filtrarArvore(no: NoArvore, filtro: FiltroMostrar, item?: ItemArvore): NoArvore | null {
+  if (filtro === "tudo") return no;
   const itens: ItemArvore[] = [];
   for (const it of no.itens) {
-    const filho = it.filho ? soOQueFalta(it.filho) : undefined;
-    if (filho || it.pendentes > 0) itens.push({ ...it, filho: filho ?? undefined });
+    if (it.filho) {
+      const filho = filtrarArvore(it.filho, filtro, it);
+      if (filho) itens.push({ ...it, filho });
+    } else if (componentePassa(it, filtro)) {
+      itens.push(it);
+    }
   }
-  if (itens.length === 0 && no.status === "ok") return null;
+  if (itens.length === 0 && !estruturaPassa(no, item, filtro)) return null;
   return { ...no, itens };
+}
+
+/** Linha da visão "Pendências do código": estrutura ou componente que tem algo pendente. */
+export interface LinhaPendenciaCodigo {
+  exec: string;
+  tipo: "estrutura" | "componente";
+  codigo: string;
+  nome: string;
+  ops: string[]; // OPs da estrutura (do componente: as da estrutura onde ele entra)
+  status?: StatusSaldo;
+  planejada?: number;
+  efetivada?: number;
+  pai?: { pendentes: number; linhas: number }; // situação da estrutura na de cima ("No pai")
+  pendentes: number;
+  linhas: number;
+  qtdUsada?: number;
+  apontado?: number;
+  unidade?: string;
+}
+
+/**
+ * Lista plana de todas as execuções do código, na ordem da árvore.
+ * "tudo" aqui = todas as pendências: estrutura sem saldo ou não apontada no pai, e componente não apontado.
+ */
+export function pendenciasDoCodigo(execs: Execucao[], filtro: FiltroMostrar): LinhaPendenciaCodigo[] {
+  const linhas: LinhaPendenciaCodigo[] = [];
+  const naoBaixado = filtro !== "sem-saldo";
+  const semSaldo = filtro !== "nao-baixado";
+  const visitar = (exec: string, no: NoArvore, item: ItemArvore | undefined) => {
+    const ops = no.ops.map((o) => o.op);
+    if ((semSaldo && faltaSubirSaldo(no.status)) || (naoBaixado && !!item && item.pendentes > 0)) {
+      linhas.push({
+        exec,
+        tipo: "estrutura",
+        codigo: no.codEstrutura,
+        nome: no.nome,
+        ops,
+        status: no.status,
+        planejada: no.planejada,
+        efetivada: no.efetivada,
+        pai: item ? { pendentes: item.pendentes, linhas: item.linhas } : undefined,
+        pendentes: item?.pendentes ?? 0,
+        linhas: item?.linhas ?? 0,
+      });
+    }
+    for (const it of no.itens) {
+      if (it.filho) visitar(exec, it.filho, it);
+      else if (naoBaixado && it.pendentes > 0) {
+        linhas.push({
+          exec,
+          tipo: "componente",
+          codigo: it.codigoPrd,
+          nome: it.nome,
+          ops,
+          pendentes: it.pendentes,
+          linhas: it.linhas,
+          qtdUsada: it.qtdUsada,
+          apontado: it.apontado,
+          unidade: it.unidade,
+        });
+      }
+    }
+  };
+  for (const e of execs) for (const r of e.raizes) visitar(e.exec, r, undefined);
+  return linhas;
 }

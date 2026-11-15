@@ -14,7 +14,11 @@ export default async function Painel() {
       <>
         <Topo ativo="painel" />
         <main className="in">
-          <p className="card vazio">Nenhuma planilha carregada ainda. Rode a carga diária para os dados aparecerem aqui.</p>
+          <div className="card vazio">
+            <b>Nenhuma planilha carregada ainda</b>
+            <span>Importe a planilha de saldo em Atualizar para os dados aparecerem aqui.</span>
+            <Link className="btn sec" href="/importar">Ir para Atualizar</Link>
+          </div>
         </main>
       </>
     );
@@ -29,8 +33,10 @@ export default async function Painel() {
   ]);
 
   const avanco = carga.totalPrevisto > 0 ? carga.totalRealizado / carga.totalPrevisto : 0;
-  const concluidas = tarefas.filter((t) => situacaoTarefa(t.avanco) === "concluida").length;
-  const semAvanco = tarefas.filter((t) => situacaoTarefa(t.avanco) === "sem-avanco").length;
+  const situacoes = tarefas.map((t) => situacaoTarefa(t.avanco));
+  const concluidas = situacoes.filter((s) => s === "concluida").length;
+  const semAvanco = situacoes.filter((s) => s === "sem-avanco").length;
+  const andamento = situacoes.filter((s) => s === "andamento").length;
   const lista: TarefaResumo[] = tarefas.map((t) => ({
     cod: t.codTarefa,
     descricao: descricaoCurta(t.descricao),
@@ -47,20 +53,31 @@ export default async function Painel() {
   }));
 
   return (
-    <>
-      <Topo ativo="painel" projeto={carga.projeto} atualizado={carga.criadaEm} />
-      <section className="hero" aria-label="Resumo do projeto">
-        <div className="in">
-          <span className="kicker">PCP · Centro de custo {carga.centroCusto}</span>
-          <h1>
-            Saldo {carga.projeto}
-            <em>{pct(avanco)} do saldo subido</em>
-          </h1>
+    <div className="tela-cheia">
+      <Topo ativo="painel" />
+      <main className="in">
+        <div className="cab-pagina">
+          <div className="titulo">
+            <h1>Saldo {carga.projeto}</h1>
+            <span className="kicker">PCP · Centro de custo {carga.centroCusto}</span>
+          </div>
+        </div>
+        <section aria-label="Resumo do projeto">
           <div className="stats">
             <div className="stat destaque">
               <span className="stat-l">Avanço do saldo</span>
               <span className="stat-v">{pct(avanco)}</span>
+              <span className="barra" role="presentation">
+                <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
+              </span>
               <span className="stat-d">{num(carga.totalRealizado, 1)} de {num(carga.totalPrevisto, 1)} previsto</span>
+            </div>
+            <div className="stat">
+              <span className="stat-l">Códigos de tarefa</span>
+              <span className="stat-v">{num(semAvanco)} sem avanço</span>
+              <span className="stat-d">
+                {num(andamento)} em andamento · {num(concluidas)} concluídos · {num(tarefas.length)} no total
+              </span>
             </div>
             <div className="stat">
               <span className="stat-l">Execuções pendentes</span>
@@ -68,37 +85,22 @@ export default async function Painel() {
               <span className="stat-d">de {num(carga.totalExecucoes)} execuções</span>
             </div>
             <div className="stat">
-              <span className="stat-l">Códigos de tarefa</span>
-              <span className="stat-v">{num(concluidas)} concluídos</span>
-              <span className="stat-d">{num(semAvanco)} sem avanço · {num(tarefas.length)} no total</span>
-            </div>
-            <div className="stat">
               <span className="stat-l">Pendentes de baixa</span>
               <span className="stat-v">{num(pendComp)}</span>
               <span className="stat-d">de {num(totalComp)} componentes · <Link href="/pendencias">ver lista</Link></span>
             </div>
           </div>
-        </div>
-      </section>
-
-      <main className="in">
-        <section aria-labelledby="t-tarefas">
-          <div className="section-h">
-            <div>
-              <h2 id="t-tarefas">Códigos de tarefa</h2>
-              <p>Clique num código para abrir as tarefas filhas, as estruturas e os componentes.</p>
-            </div>
-          </div>
-          <ListaTarefas tarefas={lista} />
+        </section>
+        <ListaTarefas tarefas={lista}>
           {retrabalho > 0 && (
             <p className="nota">
               <b>Retrabalho:</b> {num(retrabalho)} componentes fora dos códigos de tarefa, {num(retrabalhoPend)} pendentes de baixa.{" "}
               <Link href={`/tarefa/${RETRABALHO}`}>Abrir retrabalho</Link>
             </p>
           )}
-        </section>
+        </ListaTarefas>
       </main>
       <Rodape arquivo={carga.arquivo} />
-    </>
+    </div>
   );
 }

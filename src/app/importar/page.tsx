@@ -12,23 +12,20 @@ export default async function Importar() {
   const habilitada = Boolean(process.env.IMPORTACAO_SENHA);
   return (
     <>
-      <Topo ativo="importar" projeto={carga?.projeto} atualizado={carga?.criadaEm} />
-      <section className="hero" aria-label="Atualizar dados">
-        <div className="in">
-          <span className="kicker">Atualizar dados</span>
-          <h1>
-            Importar a planilha de saldo
-            <em>{carga ? `Última carga em ${quando(carga.criadaEm)}` : "Nenhuma planilha carregada ainda"}</em>
-          </h1>
-          {carga && <p className="lede">Arquivo atual: {carga.arquivo} · projeto {carga.projeto}</p>}
-          <ol className="passos">
-            <li><b>Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.</li>
-            <li><b>Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.</li>
-            <li><b>Confira o resumo</b>, digite a senha de importação e atualize. A troca acontece de uma vez, só no final.</li>
-          </ol>
-        </div>
-      </section>
+      <Topo ativo="importar" />
       <main className="in">
+        <div className="cab-pagina">
+          <span className="kicker">Atualizar dados</span>
+          <div className="titulo">
+            <h1>Importar a planilha de saldo</h1>
+            <p className="resumo">{carga ? `Última carga em ${quando(carga.criadaEm)}` : "Nenhuma planilha carregada ainda"}</p>
+          </div>
+          {carga && (
+            <p className="nota">
+              Arquivo atual: {carga.arquivo} · projeto {carga.projeto}
+            </p>
+          )}
+        </div>
         {!habilitada && (
           <p className="nota">
             <b>Importação desligada.</b> Para ligar, cadastre a variável <span className="mono">IMPORTACAO_SENHA</span> na Vercel e publique de novo.
