@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num } from "@/lib/formato";
-import { compararCodigo } from "@/lib/regras";
+import { ROTULO_CORTE, compararCodigo, planosDaColuna, statusCorte } from "@/lib/regras";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pendências de baixa" };
@@ -12,8 +12,19 @@ export const metadata: Metadata = { title: "Pendências de baixa" };
 const POR_PAGINA = 100;
 
 interface Props {
-  searchParams: { tarefa?: string; grupo?: string; q?: string; pagina?: string };
+  searchParams: { tarefa?: string; grupo?: string; q?: string; pagina?: string; plano?: string };
 }
+
+// A coluna guarda um ou mais planos separados por vírgula ("CNC0007581,PA10.081")
+const temPlano = (prefixo: string): Prisma.ComponenteWhereInput => ({
+  OR: [{ cnc: { startsWith: prefixo } }, { cnc: { contains: `,${prefixo}` } }],
+});
+const FILTRO_PLANO: Record<string, { rotulo: string; where: Prisma.ComponenteWhereInput }> = {
+  cnc: { rotulo: "Com CNC", where: temPlano("CNC") },
+  pa: { rotulo: "Com PA/PC", where: temPlano("PA") },
+  sem: { rotulo: "Sem plano de corte", where: { cnc: null } },
+};
+const CLASSE_CORTE = { apontado: "ok", parcial: "parcial", pendente: "pend" } as const;
 
 function link(base: Props["searchParams"], muda: Partial<Props["searchParams"]>): string {
   const p = new URLSearchParams();
@@ -38,22 +49,29 @@ export default async function Pendencias({ searchParams }: Props) {
   const grupo = searchParams.grupo?.slice(0, 20) || undefined;
   const q = searchParams.q?.trim().slice(0, 80) || undefined;
   const pagina = Math.max(1, Math.trunc(Number(searchParams.pagina)) || 1);
+  const plano = searchParams.plano && FILTRO_PLANO[searchParams.plano] ? searchParams.plano : undefined;
 
   const base: Prisma.ComponenteWhereInput = { cargaId: carga.id, apontado: { lte: 0 } };
   const where: Prisma.ComponenteWhereInput = {
     ...base,
     ...(tarefa ? { tarPai: tarefa } : {}),
     ...(grupo ? { grupo } : {}),
-    ...(q
-      ? {
-          OR: [
-            { codigoPrd: { contains: q, mode: "insensitive" } },
-            { nome: { contains: q, mode: "insensitive" } },
-            { codOrdem: { contains: q } },
-            { codEstrutura: { contains: q } },
-          ],
-        }
-      : {}),
+    AND: [
+      ...(plano ? [FILTRO_PLANO[plano].where] : []),
+      ...(q
+        ? [
+            {
+              OR: [
+                { codigoPrd: { contains: q, mode: "insensitive" } },
+                { nome: { contains: q, mode: "insensitive" } },
+                { codOrdem: { contains: q } },
+                { codEstrutura: { contains: q } },
+                { cnc: { contains: q.toUpperCase() } },
+              ],
+            } satisfies Prisma.ComponenteWhereInput,
+          ]
+        : []),
+    ],
   };
 
   const [total, linhas, porTarefa, porGrupo] = await Promise.all([
@@ -70,6 +88,16 @@ export default async function Pendencias({ searchParams }: Props) {
   const tarefas = porTarefa.sort((a, b) => compararCodigo(a.tarPai, b.tarPai));
   const grupos = porGrupo.sort((a, b) => b._count._all - a._count._all);
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+
+  // Corte de cada linha da página (OP + plano na aba CNC_PCQ)
+  const planosPagina = [...new Set(linhas.flatMap((c) => planosDaColuna(c.cnc)))];
+  const linhasPlano = planosPagina.length
+    ? await prisma.planoCorte.findMany({
+        where: { cargaId: carga.id, plano: { in: planosPagina }, op: { in: [...new Set(linhas.map((c) => c.codOrdem))] } },
+        select: { plano: true, op: true, qtdPrev: true, qtdApont: true },
+      })
+    : [];
+  const corte = new Map(linhasPlano.map((l) => [`${l.op}|${l.plano}`, statusCorte(l.qtdPrev, l.qtdApont)]));
 
   return (
     <>
@@ -98,11 +126,22 @@ export default async function Pendencias({ searchParams }: Props) {
               ))}
             </select>
             <label className="sr" htmlFor="q">Buscar</label>
-            <input id="q" name="q" className="campo busca" type="search" placeholder="Código, nome, OP ou estrutura" defaultValue={q ?? ""} />
+            <input id="q" name="q" className="campo busca" type="search" placeholder="Código, nome, OP, estrutura ou plano" defaultValue={q ?? ""} />
             {grupo && <input type="hidden" name="grupo" value={grupo} />}
+            {plano && <input type="hidden" name="plano" value={plano} />}
             <button className="btn" type="submit">Filtrar</button>
-            {(tarefa || grupo || q) && <Link className="btn sec" href="/pendencias">Limpar</Link>}
+            {(tarefa || grupo || q || plano) && <Link className="btn sec" href="/pendencias">Limpar</Link>}
           </form>
+          <div className="chips" role="group" aria-label="Plano de corte">
+            <Link className="chip-btn" aria-pressed={!plano} href={link(searchParams, { plano: undefined, pagina: undefined })}>
+              Todos os materiais
+            </Link>
+            {Object.entries(FILTRO_PLANO).map(([k, f]) => (
+              <Link key={k} className="chip-btn" aria-pressed={plano === k} href={link(searchParams, { plano: k, pagina: undefined })}>
+                {f.rotulo}
+              </Link>
+            ))}
+          </div>
           <div className="chips" role="group" aria-label="Grupo de material">
             <Link className="chip-btn" aria-pressed={!grupo} href={link(searchParams, { grupo: undefined, pagina: undefined })}>
               Todos os grupos
@@ -135,6 +174,7 @@ export default async function Pendencias({ searchParams }: Props) {
                     <th>Estrutura</th>
                     <th>Componente</th>
                     <th>Grupo</th>
+                    <th>Plano de corte</th>
                     <th className="n">Usado</th>
                     <th className="n">Apontado</th>
                   </tr>
@@ -152,6 +192,23 @@ export default async function Pendencias({ searchParams }: Props) {
                         {c.nome}
                       </td>
                       <td>{c.grupo}</td>
+                      <td>
+                        {c.cnc
+                          ? planosDaColuna(c.cnc).map((p) => {
+                              const st = corte.get(`${c.codOrdem}|${p}`);
+                              return (
+                                <span key={p} className="plano-cel">
+                                  <span className="mono">{p}</span>
+                                  {st ? (
+                                    <span className={`tag ${CLASSE_CORTE[st]}`}>{ROTULO_CORTE[st]}</span>
+                                  ) : (
+                                    <span className="tag neutro">Fora da aba CNC_PCQ</span>
+                                  )}
+                                </span>
+                              );
+                            })
+                          : "–"}
+                      </td>
                       <td className="n">{num(c.qtdUsada, 3)} {c.unidade}</td>
                       <td className="n">{num(c.apontado, 3)}</td>
                     </tr>

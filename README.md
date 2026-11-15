@@ -19,12 +19,16 @@ Abra http://localhost:3000 e entre com a senha da equipe (`ACESSO_SENHA` no arqu
 
 ## Atualizar os dados (todo dia)
 
+Pelo site: menu **Atualizar**, escolha o `.xlsx`, confira o resumo e digite a senha de importação (`IMPORTACAO_SENHA`).
+
+Pelo terminal:
+
 ```bash
 npm run carga -- "C:\caminho\Saldo Raia 7896 - Modelo.xlsx"
 ```
 
-A carga lê as abas Resumo Geral, Componentes e Dados, confere os totais com a planilha e só então troca os dados da tela.
-Salve a planilha no Excel antes de rodar, para os valores das fórmulas estarem atualizados.
+Os dois caminhos leem as abas Resumo Geral, Componentes, Dados e CNC_PCQ, conferem os totais com a planilha e só então trocam os dados da tela.
+Salve a planilha no Excel antes, para os valores das fórmulas estarem atualizados.
 
 ## Variáveis de ambiente
 
@@ -35,8 +39,9 @@ Copie `.env.example` para `.env` e preencha. Publicação na Vercel e rotina di�
 | Tela | Para quem | O que mostra |
 |------|-----------|--------------|
 | Painel | Gestão | Avanço geral e a lista de códigos de tarefa |
-| Código de tarefa | Quem sobe saldo | Tarefas filhas, estruturas e componentes, com o que falta apontar |
-| Pendências | Quem sobe saldo | Todos os componentes sem apontamento, com filtro |
+| Código de tarefa | Quem sobe saldo | Tarefas filhas, estruturas e componentes, com o que falta apontar e o plano de corte (CNC/PA-PC) de cada material |
+| Pendências | Quem sobe saldo | Todos os componentes sem apontamento, com filtro por tarefa, grupo e plano de corte |
+| Atualizar | Quem atualiza a planilha | Importa o .xlsx do dia, com resumo para conferir antes de trocar os dados |
 
 ## Testes
 

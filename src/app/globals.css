@@ -210,6 +210,13 @@ details > summary::-webkit-details-marker { display: none; }
 .item-qtd { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .item-link { grid-column: 2 / -1; font-size: 14px; font-weight: 600; color: var(--red); text-decoration: none; }
 .item-link:hover { text-decoration: underline; }
+/* plano de corte (CNC / PA-PC) do material */
+.cortes { grid-column: 2 / -1; list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.corte { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 6px 10px; border-radius: 8px; background: var(--tint); }
+.corte-meta { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag.plano { background: var(--ink); color: var(--white); font-variant-numeric: tabular-nums; }
+.plano-cel { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.plano-cel + .plano-cel { margin-top: 8px; }
 
 /* ---------- tabela ---------- */
 .tab-wrap { overflow-x: auto; }
@@ -231,6 +238,33 @@ td.n { text-align: right; white-space: nowrap; }
 .login label { font-weight: 600; display: flex; flex-direction: column; gap: 6px; }
 .erro { padding: 10px 14px; border-radius: 10px; background: rgba(204, 15, 16, 0.08); border: 1px solid var(--red); color: var(--red); font-weight: 600; }
 
+/* ---------- importar ---------- */
+.passos { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; font-size: 17px; color: var(--muted); max-width: 80ch; }
+.passos b { color: var(--ink); }
+.importador { display: flex; flex-direction: column; gap: 16px; }
+.arquivo {
+  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 28px 24px; cursor: pointer;
+  border: 2px dashed var(--gray); text-align: center; align-items: center;
+}
+.arquivo:hover, .arquivo:focus-within { border-color: var(--red); }
+.arquivo:focus-within { outline: 3px solid var(--red); outline-offset: 2px; }
+.arquivo input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.arquivo.ocupado { opacity: 0.6; cursor: progress; }
+.arquivo-t { font-size: 20px; font-weight: 700; }
+.arquivo-d { font-size: 15px; color: var(--muted); max-width: 70ch; }
+.resumo-carga { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+.resumo-carga h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.resumo-grade { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.resumo-grade div { padding: 12px 14px; border-radius: 10px; background: var(--tint); border: 1px solid var(--line); }
+.resumo-grade dt { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.resumo-grade dd { margin: 2px 0 0; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.aviso { padding: 10px 14px; border-radius: 10px; background: rgba(255, 107, 5, 0.12); border: 1px solid var(--warn); font-weight: 600; }
+.erro ul { margin: 6px 0; padding-left: 20px; font-weight: 500; }
+.marcar { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); min-height: 44px; cursor: pointer; }
+.marcar input { width: 20px; height: 20px; accent-color: var(--red); }
+.sucesso { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: 12px; background: var(--white); border: 1px solid var(--ok); border-left: 4px solid var(--ok); font-weight: 600; }
+.btn:disabled { background: var(--gray); color: var(--ink); cursor: not-allowed; }
+
 /* ---------- celular ---------- */
 @media (max-width: 1000px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -244,7 +278,7 @@ td.n { text-align: right; white-space: nowrap; }
   .top-dir { margin-left: 0; width: 100%; justify-content: space-between; flex-wrap: nowrap; }
   .top-dir .chip { font-size: 13px; white-space: normal; min-width: 0; }
   .item { grid-template-columns: auto minmax(0, 1fr); }
-  .item-nome, .item-qtd { grid-column: 1 / -1; }
+  .item-nome, .item-qtd, .cortes { grid-column: 1 / -1; }
   .item-qtd { white-space: normal; }
 }
 @media (max-width: 480px) {

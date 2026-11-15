@@ -1,5 +1,5 @@
 // Transforma o JSON lido da planilha nas linhas do banco e confere os totais.
-import { normalizarCodTarefa, numero, statusMaterial, statusSaldo, texto } from "./regras";
+import { normalizarCodTarefa, normalizarPlano, numero, planosDaColuna, statusMaterial, statusSaldo, texto, tipoPlano } from "./regras";
 
 export interface PlanilhaJson {
   arquivo: string;
@@ -8,6 +8,24 @@ export interface PlanilhaJson {
   tarefas: Record<string, unknown>[];
   componentes: Record<string, unknown>[];
   ordens: Record<string, unknown>[];
+  planos?: Record<string, unknown>[]; // aba CNC_PCQ (planilha antiga não tem)
+}
+
+/** Uma linha da aba CNC_PCQ: uma OP dentro de um plano de corte. */
+export interface LinhaPlano {
+  plano: string;
+  tipo: string;
+  op: string;
+  qtdPrev: number;
+  qtdApont: number;
+  statusOp: string;
+  lote: string | null;
+  criadoEm: string | null; // AAAA-MM-DD
+  qtdSucata: number;
+  qtdEmp: number;
+  qtdMpFinal: number;
+  descricaoOp: string;
+  pos: string;
 }
 
 export interface LinhaTarefa {
@@ -43,6 +61,7 @@ export interface LinhaComponente {
   previsto: number;
   apontado2: number;
   lote: string | null;
+  cnc: string | null; // plano(s) de corte (CNC... ou PA...), separados por vírgula
 }
 
 export interface LinhaOrdem {
@@ -73,7 +92,10 @@ export interface CargaPreparada {
   tarefas: LinhaTarefa[];
   componentes: LinhaComponente[];
   ordens: LinhaOrdem[];
+  planos: LinhaPlano[];
   divergencias: Divergencia[];
+  /** Componentes com plano na coluna CNC que não acham a linha (OP + plano) na aba CNC_PCQ. */
+  cncSemControle: number;
 }
 
 /** "Saldo Raia 7896 - Modelo.xlsx" vira "Raia 7896". */
@@ -108,8 +130,35 @@ export function prepararCarga(json: PlanilhaJson, projeto?: string): CargaPrepar
       previsto: numero(c.previsto),
       apontado2: numero(c.apontado2),
       lote: lote === "" ? null : lote,
+      cnc: normalizarPlano(c.cnc),
     };
   });
+
+  const planos: LinhaPlano[] = [];
+  for (const p of json.planos ?? []) {
+    const plano = planosDaColuna(p.plano)[0];
+    const op = texto(p.op);
+    if (!plano || !op) continue;
+    const lotePlano = texto(p.lote);
+    const criadoEm = texto(p.criadoEm);
+    planos.push({
+      plano,
+      tipo: tipoPlano(plano),
+      op,
+      qtdPrev: numero(p.qtdPrev),
+      qtdApont: numero(p.qtdApont),
+      statusOp: texto(p.statusOp),
+      lote: lotePlano === "" ? null : lotePlano,
+      criadoEm: /^\d{4}-\d{2}-\d{2}$/.test(criadoEm) ? criadoEm : null,
+      qtdSucata: numero(p.qtdSucata),
+      qtdEmp: numero(p.qtdEmp),
+      qtdMpFinal: numero(p.qtdMpFinal),
+      descricaoOp: texto(p.descricaoOp),
+      pos: texto(p.pos),
+    });
+  }
+  const chavesPlano = new Set(planos.map((p) => `${p.op}|${p.plano}`));
+  const cncSemControle = componentes.filter((c) => planosDaColuna(c.cnc).some((p) => !chavesPlano.has(`${c.codOrdem}|${p}`))).length;
 
   // Índices por tarefa pai
   const porPai = new Map<string, LinhaComponente[]>();
@@ -182,6 +231,8 @@ export function prepararCarga(json: PlanilhaJson, projeto?: string): CargaPrepar
     tarefas,
     componentes,
     ordens,
+    planos,
     divergencias,
+    cncSemControle,
   };
 }

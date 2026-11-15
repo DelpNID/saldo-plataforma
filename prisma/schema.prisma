@@ -26,6 +26,7 @@ model Carga {
   tarefas        Tarefa[]
   componentes    Componente[]
   ordens         Ordem[]
+  planos         PlanoCorte[]
 
   @@index([ativa])
 }
@@ -73,10 +74,35 @@ model Componente {
   previsto     Float // QTDE PLANEJADA da OP
   apontado2    Float // QTDE EFETIVADA da OP
   lote         String?
+  cnc          String? // coluna CNC: plano de corte da OP (CNC... chapa, PA... tubo/perfil/barra)
 
   @@index([cargaId, tarPai])
   @@index([cargaId, apontado])
   @@index([cargaId, grupo])
+  @@index([cargaId, cnc])
+}
+
+// Aba CNC_PCQ: cada OP dentro de um plano de corte
+model PlanoCorte {
+  id          Int     @id @default(autoincrement())
+  cargaId     Int
+  carga       Carga   @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  plano       String // NPLANO
+  tipo        String // CNC ou PA/PC
+  op          String
+  qtdPrev     Float // QTDPREV: peças da OP no plano
+  qtdApont    Float // QTDAPONT: peças com corte apontado
+  statusOp    String // STATUS OP
+  lote        String? // NLOTE da matéria-prima
+  criadoEm    String? // DATACRIACAO (AAAA-MM-DD)
+  qtdSucata   Float // QTDSUCATA do plano
+  qtdEmp      Float // QTDEMP: matéria-prima empenhada no plano
+  qtdMpFinal  Float // QTDMPFINAL: matéria-prima desta OP
+  descricaoOp String
+  pos         String
+
+  @@index([cargaId, plano])
+  @@index([cargaId, op])
 }
 
 // Aba Dados resumida por OP

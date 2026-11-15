@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { NoEstrutura } from "@/components/Arvore";
+import { NoEstrutura, chaveCorte, type Cortes } from "@/components/Arvore";
 import { Avanco } from "@/components/Etiquetas";
 import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
@@ -11,7 +11,9 @@ import {
   descricaoCurta,
   montarArvore,
   resumirOrigens,
+  planosDaColuna,
   soOQueFalta,
+  statusCorte,
   statusSaldo,
   type NoArvore,
   type Origem,
@@ -77,6 +79,32 @@ export default async function TarefaPage({ params, searchParams }: Props) {
       ? execAtual.raizes.map(soOQueFalta).filter((r): r is NoArvore => r !== null)
       : execAtual.raizes
     : [];
+
+  // Planos de corte (CNC e PA/PC) dos materiais da execução aberta
+  const paresExec = new Set(
+    (execAtual ? comps.filter((c) => c.exec === execAtual.exec && c.cnc) : []).flatMap((c) => planosDaColuna(c.cnc).map((p) => chaveCorte(c.codOrdem, p))),
+  );
+  const planosExec = [...new Set([...paresExec].map((k) => k.slice(k.indexOf("|") + 1)))];
+  const linhasPlano = planosExec.length
+    ? await prisma.planoCorte.findMany({
+        where: { cargaId: carga.id, plano: { in: planosExec } },
+        select: { plano: true, op: true, qtdPrev: true, qtdApont: true, statusOp: true, lote: true, criadoEm: true, qtdSucata: true, qtdMpFinal: true },
+      })
+    : [];
+  const cortes: Cortes = { linha: new Map(), plano: new Map() };
+  for (const l of linhasPlano) {
+    cortes.linha.set(chaveCorte(l.op, l.plano), l);
+    const r = cortes.plano.get(l.plano) ?? { ops: 0, cortadas: 0 };
+    r.ops += 1;
+    if (statusCorte(l.qtdPrev, l.qtdApont) === "apontado") r.cortadas += 1;
+    cortes.plano.set(l.plano, r);
+  }
+  let cortesPendentes = 0;
+  for (const k of paresExec) {
+    const l = cortes.linha.get(k);
+    if (!l || statusCorte(l.qtdPrev, l.qtdApont) !== "apontado") cortesPendentes += 1;
+  }
+
   const linkExec = (exec: string, soFalta: boolean) => {
     const p = new URLSearchParams();
     if (exec) p.set("exec", exec);
@@ -201,13 +229,16 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                 {execAtual.exec ? `Execução ${execAtual.exec}` : "Sem execução"}
                 <span className="meta">
                   {num(execAtual.estruturas)} estruturas · {num(execAtual.opsSemSaldo)} OPs sem saldo completo · {num(execAtual.pendentes)} pendentes de baixa
+                  {planosExec.length > 0 &&
+                    ` · ${num(planosExec.length)} ${planosExec.length === 1 ? "plano" : "planos"} de corte` +
+                      (cortesPendentes > 0 ? ` (${num(cortesPendentes)} ${cortesPendentes === 1 ? "OP" : "OPs"} sem corte apontado)` : ", todos cortados")}
                 </span>
               </p>
               <div className="exec-corpo">
                 {raizes.length === 0 ? (
                   <p className="vazio">Nada pendente nesta execução.</p>
                 ) : (
-                  raizes.map((r) => <NoEstrutura key={r.codEstrutura} no={r} nivel={0} pai={cod} />)
+                  raizes.map((r) => <NoEstrutura key={r.codEstrutura} no={r} nivel={0} pai={cod} cortes={cortes} />)
                 )}
               </div>
             </div>

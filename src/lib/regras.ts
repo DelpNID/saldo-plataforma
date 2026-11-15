@@ -94,6 +94,56 @@ export function compararCodigo(a: string, b: string): number {
   return 0;
 }
 
+// ---------- Plano de corte (coluna CNC da aba Componentes + aba CNC_PCQ) ----------
+
+/**
+ * Planos da coluna CNC. 0 ou vazio = sem plano de corte.
+ * Quando a OP entra em mais de um plano, a planilha junta os códigos com vírgula ("CNC0007581,CNC0007585").
+ */
+export function planosDaColuna(v: unknown): string[] {
+  const vistos = new Set<string>();
+  for (const parte of texto(v).toUpperCase().split(/[,;]/)) {
+    const p = parte.replace(/\s+/g, "");
+    if (p !== "" && p !== "0") vistos.add(p);
+  }
+  return [...vistos];
+}
+
+/** Valor guardado no banco: os planos da coluna CNC separados por vírgula, ou null. */
+export function normalizarPlano(v: unknown): string | null {
+  const planos = planosDaColuna(v);
+  return planos.length ? planos.join(",") : null;
+}
+
+/** Matéria-prima que costuma passar por plano de corte (CNC ou PA/PC). */
+export function usaPlanoDeCorte(nome: string): boolean {
+  return /^(CHAPA|TUBO|PERFIL|BARRA)\b/i.test(texto(nome));
+}
+
+export type TipoPlano = "CNC" | "PA/PC" | "Outro";
+
+/** CNC = corte CNC (chapa). PA = plano de corte de tubo, perfil e barra (PA/PC). */
+export function tipoPlano(plano: string): TipoPlano {
+  if (plano.startsWith("CNC")) return "CNC";
+  if (plano.startsWith("PA")) return "PA/PC";
+  return "Outro";
+}
+
+export type StatusCorte = "apontado" | "parcial" | "pendente";
+
+/** Corte da OP no plano: QTDAPONT comparado com QTDPREV (aba CNC_PCQ). */
+export function statusCorte(qtdPrev: number, qtdApont: number): StatusCorte {
+  if (qtdApont <= 0) return "pendente";
+  if (qtdPrev > 0 && qtdApont < qtdPrev - 1e-9) return "parcial";
+  return "apontado";
+}
+
+export const ROTULO_CORTE: Record<StatusCorte, string> = {
+  apontado: "Corte apontado",
+  parcial: "Corte parcial",
+  pendente: "Corte não apontado",
+};
+
 // ---------- Origem do saldo (tarefas filhas) ----------
 
 export type TipoOrigem = "material" | "propria" | "outra" | "retrabalho";
@@ -112,6 +162,7 @@ export interface CompBase {
   grupo: string;
   previsto: number;
   apontado2: number;
+  cnc?: string | null;
 }
 
 export interface Origem {
@@ -167,6 +218,7 @@ export interface ItemArvore {
   apontado: number;
   linhas: number;
   pendentes: number; // linhas com APONTADO = 0
+  planos: { op: string; plano: string }[]; // plano de corte (CNC ou PA/PC) de cada OP onde o item entra
   filho?: NoArvore; // quando o item é uma estrutura fabricada nesta execução
 }
 
@@ -231,13 +283,16 @@ export function montarArvore(comps: CompBase[], nomeOp: (op: string) => string |
       for (const r of rows) {
         let it = itensMap.get(r.codigoPrd);
         if (!it) {
-          it = { codigoPrd: r.codigoPrd, nome: r.nome, unidade: r.unidade, grupo: r.grupo, tarFilho: r.tarFilho, qtdUsada: 0, apontado: 0, linhas: 0, pendentes: 0 };
+          it = { codigoPrd: r.codigoPrd, nome: r.nome, unidade: r.unidade, grupo: r.grupo, tarFilho: r.tarFilho, qtdUsada: 0, apontado: 0, linhas: 0, pendentes: 0, planos: [] };
           itensMap.set(r.codigoPrd, it);
         }
         it.qtdUsada += r.qtdUsada;
         it.apontado += r.apontado;
         it.linhas += 1;
         if (statusMaterial(r.apontado) === "pendente") it.pendentes += 1;
+        for (const plano of planosDaColuna(r.cnc)) {
+          if (!it.planos.some((p) => p.op === r.codOrdem && p.plano === plano)) it.planos.push({ op: r.codOrdem, plano });
+        }
       }
 
       const novoCaminho = new Set(caminho).add(cod);

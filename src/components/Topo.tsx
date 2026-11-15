@@ -2,7 +2,7 @@ import Link from "next/link";
 import { quando } from "@/lib/formato";
 
 interface Props {
-  ativo: "painel" | "pendencias" | "tarefa";
+  ativo: "painel" | "pendencias" | "tarefa" | "importar";
   projeto?: string;
   atualizado?: Date;
 }
@@ -25,6 +25,7 @@ export function Topo({ ativo, projeto, atualizado }: Props) {
         <nav className="nav" aria-label="Telas">
           <Link href="/" aria-current={ativo === "painel" ? "page" : undefined}>Painel</Link>
           <Link href="/pendencias" aria-current={ativo === "pendencias" ? "page" : undefined}>Pendências</Link>
+          <Link href="/importar" aria-current={ativo === "importar" ? "page" : undefined}>Atualizar</Link>
         </nav>
         <div className="top-dir">
           {projeto && atualizado && (
