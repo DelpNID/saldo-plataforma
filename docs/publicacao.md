@@ -4,7 +4,7 @@
 
 | O quê | Onde |
 |------|------|
-| Código | GitHub `luizgscastro/saldo-plataforma` (privado). Transferir para a DelpNID quando houver permissão. |
+| Código | GitHub `DelpNID/saldo-plataforma` (privado), conta do Núcleo de Inovação |
 | Site | Vercel, time **NID - Núcleo de Inovação e Desenvolvimento**, projeto `saldo-plataforma`, região São Paulo (`gru1`) |
 | Banco | Neon, projeto `saldo-plataforma` (São Paulo) |
 
@@ -21,8 +21,8 @@ A proteção da Vercel vale só para as prévias. A produção fica aberta na in
      ```
 
    `DATABASE_URL` e `DIRECT_URL` já estão cadastradas.
-2. **Ligar ao GitHub** — Settings › Git › Connect Git Repository › `luizgscastro/saldo-plataforma`.
-   O GitHub pede para liberar o app da Vercel nesse repositório.
+2. **Ligar ao GitHub** — Settings › Git › Connect Git Repository › `DelpNID/saldo-plataforma`.
+   Para enviar código desta máquina, entre no GitHub com a conta **DelpNID** (o remoto já usa esse usuário).
 3. A partir daí, cada `git push` na `main` publica sozinho.
 4. Conferir:
 
