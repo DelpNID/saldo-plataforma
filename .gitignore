@@ -16,3 +16,6 @@ next-env.d.ts
 *.xls
 *.csv
 dados/
+
+# telas exportadas para redesenho (têm amostra de dados do projeto)
+design/
