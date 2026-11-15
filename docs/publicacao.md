@@ -4,6 +4,7 @@
 
 | O quê | Onde |
 |------|------|
+| Endereço | https://saldo-plataforma.vercel.app |
 | Código | GitHub `DelpNID/saldo-plataforma` (privado), conta do Núcleo de Inovação |
 | Site | Vercel, time **NID - Núcleo de Inovação e Desenvolvimento**, projeto `saldo-plataforma`, região São Paulo (`gru1`) |
 | Banco | Neon, projeto `saldo-plataforma` (São Paulo) |
