@@ -25,6 +25,8 @@ A proteção da Vercel vale só para as prévias. A produção fica aberta na in
 2. **Ligar ao GitHub** — Settings › Git › Connect Git Repository › `DelpNID/saldo-plataforma`.
    Para enviar código desta máquina, entre no GitHub com a conta **DelpNID** (o remoto já usa esse usuário).
 3. A partir daí, cada `git push` na `main` publica sozinho.
+   Os commits deste repositório saem com a identidade **DelpNID** (configurada só aqui, em `git config --local`).
+   Se o autor for outra conta, a Vercel marca a publicação como *Blocked*, porque o autor não é membro do time.
 4. Conferir:
 
    ```bash
