@@ -51,6 +51,7 @@ das aplicações do NID copiando o **código** da camada de design do Visto (`C:
   `:root[data-tema='escuro']`. Exceções declaradas: metadados (`layout.tsx`, `manifest.ts`) e a arte do Login.
 - **Tema** claro/escuro/automático: `src/lib/tema.ts` (chave `ascent.tema`), script no `<head>` (`src/lib/tema-script.ts`),
   botão no topo e escolha completa no pé da barra lateral. Arte da marca troca por CSS (`.so-tema-claro/.so-tema-escuro`).
+  O **Login é sempre claro**: `data-tema="claro"` num elemento prende aquele trecho no claro (tokens e arte da marca).
 - **Cor de gráfico** só de `src/lib/cores.ts` (`ESCALA_VERMELHOS`, `COR_ASCENT`), por `style`: uma escala de vermelhos,
   degraus vizinhos nunca no mesmo gráfico, degraus 1–2 só com rótulo escrito. Situação = `Badge` (texto + ponto), ritmo = `SELO_TOM`.
 - **Réguas**: bloco `Painel`; faixa de indicadores `.grade-indicadores` com `TileIndicador`; rótulo e cabeçalho de tabela em

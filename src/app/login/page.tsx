@@ -26,7 +26,10 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
   const senhaErrada = !semConfig && Boolean(searchParams.erro);
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-bg">
+    // data-tema="claro": o Login é sempre claro, qualquer que seja o tema escolhido (pedido do
+    // responsável, 16/11; no Visto o painel segue o tema). Os tokens e a arte da marca deste
+    // trecho ficam no claro (globals.css); text-txt reinicia a cor herdada do <body>.
+    <div data-tema="claro" className="relative flex min-h-screen overflow-hidden bg-bg text-txt">
       {/* Cena (só desktop) e o gradiente de leitura do Visto, para o texto do hero ficar legível. */}
       <div className="absolute inset-0 z-0 hidden lg:block" aria-hidden="true">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,14 +102,12 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
               </form>
             </div>
 
-            {/* Endosso da Delp só fora do desktop (no desktop ele já está no hero). A logo é escura
-                (feita para fundo claro): no tema escuro entra a versão branca (brightness-0 + invert). */}
+            {/* Endosso da Delp só fora do desktop (no desktop ele já está no hero). O painel é sempre
+                claro, então vai a logo original, que é escura e feita para fundo claro. */}
             <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
               <span className="text-xs uppercase tracking-widest text-txt-2">Uma plataforma</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/delp-logo.png" alt="Delp Engenharia" className="so-tema-claro w-[110px]" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/delp-logo.png" alt="Delp Engenharia" className="so-tema-escuro w-[110px] brightness-0 invert" />
+              <img src="/images/delp-logo.png" alt="Delp Engenharia" className="w-[110px]" />
             </div>
 
             <div className="border-t border-subtle pt-4 text-center">

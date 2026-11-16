@@ -18,8 +18,11 @@
    noturno): o tailwind.config as consome como `rgb(var(--x) / <alpha-value>)`,
    e é isso que mantém `bg-delp-red/10` e `border-subtle` funcionando enquanto
    o valor muda com o tema. Trocar o tema é redefinir estas linhas — nenhuma
-   tela precisa saber que existe tema. */
-:root {
+   tela precisa saber que existe tema.
+   Ascent: `[data-tema='claro']` num elemento PRENDE aquele trecho no claro,
+   qualquer que seja o tema escolhido — é como o Login fica sempre claro. */
+:root,
+[data-tema='claro'] {
   /* Sem esta linha os controles NATIVOS — popup do <select>, calendário do
      input type="date", listbox — seguem o tema do SISTEMA: em Windows no modo
      escuro eles apareciam escuros dentro de telas brancas (30/07/2026). Agora
@@ -275,10 +278,12 @@ input:-webkit-autofill:focus {
 
 /* Ascent: a arte da marca existe nas duas versões no HTML e o tema escolhe qual
    aparece (LogoAscent). Trocar o `src` em JS faria a renderização do servidor
-   discordar da do navegador quando o tema salvo é o escuro. */
-:root[data-tema='escuro'] .so-tema-claro {
+   discordar da do navegador quando o tema salvo é o escuro.
+   Dentro de um trecho preso no claro ([data-tema='claro'], o Login) vale a arte do claro. */
+:root[data-tema='escuro'] .so-tema-claro:not([data-tema='claro'] *) {
   display: none;
 }
-:root:not([data-tema='escuro']) .so-tema-escuro {
+:root:not([data-tema='escuro']) .so-tema-escuro,
+[data-tema='claro'] .so-tema-escuro {
   display: none;
 }

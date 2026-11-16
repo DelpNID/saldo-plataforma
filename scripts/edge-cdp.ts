@@ -178,6 +178,14 @@ const SCRIPT_CONTRASTE = `(() => {
   const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
   const fundo = (el) => { const camadas = [];
+    // Texto pintado sobre imagem ou gradiente que NÃO é ancestral (a cena do Login é um <img>
+    // irmão): não dá para medir com uma cor só, então não entra na conta.
+    const ret = el.getBoundingClientRect();
+    for (const e of document.elementsFromPoint(ret.left + ret.width / 2, ret.top + ret.height / 2)) {
+      if (e === el || el.contains(e)) continue;
+      const ce = getComputedStyle(e);
+      if (/^(img|video|canvas|svg)$/i.test(e.tagName) || (ce.backgroundImage && ce.backgroundImage !== 'none')) return null;
+      const c = cor(ce.backgroundColor); if (c && c.a >= 1) break; }
     for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e);
       if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;
       const c = cor(cs.backgroundColor); if (c && c.a > 0) { camadas.push(c); if (c.a >= 1) break; } }
