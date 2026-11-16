@@ -124,3 +124,31 @@ model Ordem {
 
   @@index([cargaId, op])
 }
+
+// Resumo de cada carga para a tela Gestão (evolução do saldo).
+// Não tem ligação com Carga: as cargas antigas são apagadas, o histórico fica.
+model Historico {
+  id              Int      @id @default(autoincrement())
+  cargaId         Int      @unique // carga que gerou o resumo
+  criadoEm        DateTime // quando a carga foi feita
+  dataRef         String // AAAA-MM-DD no fuso de São Paulo (um ponto por dia no gráfico)
+  projeto         String
+  centroCusto     String
+  arquivo         String
+  previsto        Float
+  realizado       Float
+  execucoes       Float
+  execPend        Float
+  tarefas         Int
+  concluidas      Int
+  andamento       Int
+  semAvanco       Int
+  componentes     Int
+  pendentes       Int // componentes com APONTADO = 0
+  ops             Int
+  opsComSaldo     Int
+  planos          Int // linhas da aba CNC_PCQ
+  cortesApontados Int
+
+  @@index([projeto, criadoEm])
+}

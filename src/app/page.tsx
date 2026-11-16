@@ -56,6 +56,10 @@ export default async function Painel() {
     <>
       <Topo ativo="painel" />
       <main className="in">
+        <Link className="so-celular" href="/gestao">
+          <span>Está no celular? Abra a Gestão, feita para a tela pequena.</span>
+          <span aria-hidden="true">›</span>
+        </Link>
         <div className="cab-pagina">
           <div className="titulo">
             <h1>Saldo {carga.projeto}</h1>

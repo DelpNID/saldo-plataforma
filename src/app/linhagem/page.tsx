@@ -60,10 +60,15 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
       avanco: t.avanco,
       previsto: t.qtdPrevisto,
       realizado: t.qtdRealizada,
-      filhas: agregarOrigens(t.codTarefa, porPai.get(t.codTarefa) ?? []).map((o) => ({ ...o, titulo: tituloOrigem(o, t.codTarefa) })),
     });
     mapa.set(desenho, d);
   }
+
+  // Filhas de todo código que tem componentes (inclui o RETRABALHO), para descer a linhagem
+  const filhasPorCodigo = Object.fromEntries(
+    [...porPai.entries()].map(([pai, gs]) => [pai, agregarOrigens(pai, gs).map((o) => ({ ...o, titulo: tituloOrigem(o, pai) }))]),
+  );
+  const avancoPorCodigo = Object.fromEntries(tarefas.map((t) => [t.codTarefa, { avanco: t.avanco, previsto: t.qtdPrevisto, realizado: t.qtdRealizada }]));
 
   const avanco = carga.totalPrevisto > 0 ? carga.totalRealizado / carga.totalPrevisto : 0;
   const situacoes = tarefas.map((t) => situacaoTarefa(t.avanco));
@@ -84,6 +89,8 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
         </div>
         <Linhagem
           desenhos={[...mapa.values()]}
+          filhasPorCodigo={filhasPorCodigo}
+          avancoPorCodigo={avancoPorCodigo}
           total={tarefas.length}
           abrir={(searchParams.abrir ?? "")
             .split(",")

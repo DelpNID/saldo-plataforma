@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agregarOrigens,
+  caminhosDaLinhagem,
   compararCodigo,
   descricaoCurta,
   montarArvore,
@@ -180,5 +181,33 @@ describe("agregarOrigens (Linhagem)", () => {
       "Material direto",
       "Retrabalho",
     ]);
+  });
+});
+
+describe("linhagem completa", () => {
+  // 1.05 › 1.30 › 2.10 ; 2.10 aponta de volta para 1.30 (laço) ; 1.30 também recebe retrabalho
+  const mapa: Record<string, { tarFilho: string; tipo: "material" | "propria" | "outra" | "retrabalho" }[]> = {
+    "1.05": [
+      { tarFilho: "1.05", tipo: "propria" },
+      { tarFilho: "1.30", tipo: "outra" },
+      { tarFilho: "0", tipo: "material" },
+    ],
+    "1.30": [
+      { tarFilho: "2.10", tipo: "outra" },
+      { tarFilho: "RETRABALHO", tipo: "retrabalho" },
+    ],
+    "2.10": [{ tarFilho: "1.30", tipo: "outra" }],
+    RETRABALHO: [{ tarFilho: "0", tipo: "material" }],
+  };
+  const filhas = (c: string) => mapa[c] ?? [];
+
+  it("desce código dentro de código sem entrar em laço", () => {
+    expect(caminhosDaLinhagem("1.05", filhas)).toEqual(["1.05>1.30", "1.05>1.30>2.10", "1.05>1.30>RETRABALHO"]);
+  });
+  it("respeita o limite de níveis", () => {
+    expect(caminhosDaLinhagem("1.05", filhas, 2)).toEqual(["1.05>1.30"]);
+  });
+  it("código sem filhas não abre", () => {
+    expect(caminhosDaLinhagem("9.99", filhas)).toEqual([]);
   });
 });

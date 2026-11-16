@@ -7,6 +7,7 @@ import { ControlesTarefa, TrocaCodigo } from "@/components/ControlesTarefa";
 import { Avanco, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
 import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
+import { avancoDe } from "@/lib/kpis";
 import { num, pct } from "@/lib/formato";
 import {
   RETRABALHO,
@@ -271,14 +272,18 @@ export default async function TarefaPage({ params, searchParams }: Props) {
           <div className="exec-grade">
             {visao === "arvore" && execs.length > 0 && (
               <div className="card exec-painel">
-                <h3>Execução · estruturas · pendentes de baixa</h3>
+                <h3>Execução · avanço do saldo · pendentes de baixa</h3>
                 <ul className="exec-lista" aria-label="Execução">
                   {execs.map((e) => (
                     <li key={e.exec}>
                       <Link className="exec-linha" aria-current={e.exec === execAtual?.exec ? "true" : undefined} href={link({ exec: e.exec, mostrar })} scroll={false}>
                         <b>{rotuloExec(e.exec)}</b>
-                        <span>
-                          {num(e.estruturas)} estr. · {num(e.pendentes)} pend.
+                        <span className="exec-pct">{pct(avancoDe(e))}</span>
+                        <span className="exec-meta">
+                          {num(e.estruturas)} estr. · {num(e.pendentes)} pend. · {num(e.realizado, 1)} de {num(e.previsto, 1)}
+                        </span>
+                        <span className="barra" role="presentation">
+                          <span className={avancoDe(e) >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avancoDe(e)) * 100}%` }} />
                         </span>
                       </Link>
                     </li>
@@ -293,7 +298,8 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                     {execAtual ? rotuloExec(execAtual.exec) : "Sem estruturas"}
                     {execAtual && (
                       <span className="meta">
-                        {num(execAtual.estruturas)} estruturas · {num(execAtual.opsSemSaldo)} OPs sem saldo completo · {num(execAtual.pendentes)} pendentes de baixa
+                        {pct(avancoDe(execAtual))} do saldo subido ({num(execAtual.realizado, 1)} de {num(execAtual.previsto, 1)}) · {num(execAtual.estruturas)} estruturas ·{" "}
+                        {num(execAtual.opsSemSaldo)} OPs sem saldo completo · {num(execAtual.pendentes)} pendentes de baixa
                         {planosExec.length > 0 &&
                           ` · ${num(planosExec.length)} ${planosExec.length === 1 ? "plano" : "planos"} de corte` +
                             (cortesPendentes > 0 ? ` (${num(cortesPendentes)} ${cortesPendentes === 1 ? "OP" : "OPs"} sem corte apontado)` : ", todos cortados")}

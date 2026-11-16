@@ -45,6 +45,7 @@ export async function Topo({ ativo }: Props) {
             <Link href="/linhagem" aria-current={ativo === "linhagem" ? "page" : undefined}>Linhagem</Link>
             <Link href="/pendencias" aria-current={ativo === "pendencias" ? "page" : undefined}>Pendências</Link>
             <Link href="/importar" aria-current={ativo === "importar" ? "page" : undefined}>Atualizar</Link>
+            <Link href="/gestao">Gestão</Link>
           </nav>
           <form action="/api/sair" method="post">
             <button className="btn-sair" type="submit">Sair</button>

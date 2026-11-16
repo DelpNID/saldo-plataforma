@@ -2,6 +2,7 @@
 // Usado pelo comando `npm run carga` e pela tela Atualizar dados (rota /api/importar).
 import type { PrismaClient } from "@prisma/client";
 import type { CargaPreparada } from "./carga";
+import { garantirHistorico } from "./kpis";
 
 async function emLotes<T>(linhas: T[], tamanho: number, gravar: (lote: T[]) => Promise<unknown>) {
   for (let i = 0; i < linhas.length; i += tamanho) await gravar(linhas.slice(i, i + tamanho));
@@ -51,6 +52,14 @@ export async function gravarCarga(prisma: PrismaClient, c: CargaPreparada, arqui
   ]);
   const antigas = await prisma.carga.findMany({ where: { ativa: false }, orderBy: { id: "desc" }, skip: 1, select: { id: true } });
   if (antigas.length) await prisma.carga.deleteMany({ where: { id: { in: antigas.map((a) => a.id) } } });
+
+  // Resumo para a evolução na tela Gestão. A carga já está ativa: se o resumo falhar,
+  // a importação continua valendo e a tela Gestão refaz o resumo na primeira abertura.
+  try {
+    await garantirHistorico(prisma, cargaId);
+  } catch (e) {
+    console.error(`[carga] não consegui gravar o histórico da carga ${cargaId}; a tela Gestão refaz depois`, e);
+  }
 
   return {
     cargaId,

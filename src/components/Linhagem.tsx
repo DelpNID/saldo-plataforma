@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { Avanco, EtiquetaSituacao } from "./Etiquetas";
-import { num } from "@/lib/formato";
-import { ROTULO_SITUACAO, situacaoTarefa, type SituacaoTarefa, type TipoOrigem } from "@/lib/regras";
+import { num, pct } from "@/lib/formato";
+import { ROTULO_SITUACAO, caminhosDaLinhagem, origemDesce, situacaoTarefa, type SituacaoTarefa, type TipoOrigem } from "@/lib/regras";
 
 export interface FilhaLinhagem {
   tarFilho: string;
@@ -22,7 +22,6 @@ export interface CodigoLinhagem {
   avanco: number;
   previsto: number;
   realizado: number;
-  filhas: FilhaLinhagem[];
 }
 
 export interface DesenhoLinhagem {
@@ -31,22 +30,25 @@ export interface DesenhoLinhagem {
 }
 
 const SITUACOES: SituacaoTarefa[] = ["sem-avanco", "andamento", "concluida"];
+const SEP = ">";
 
-/** Linhagem: projeto › desenho › código de tarefa › tarefas filhas, com busca e situação como no Painel. */
-export function Linhagem({
-  desenhos,
-  total,
-  abrir = [],
-  children,
-}: {
+interface Props {
   desenhos: DesenhoLinhagem[];
+  /** Tarefas filhas de cada código (inclui RETRABALHO), as mesmas de "De onde vem o saldo". */
+  filhasPorCodigo: Record<string, FilhaLinhagem[]>;
+  /** Avanço próprio de cada código de tarefa, para mostrar ao lado quando ele aparece como filha. */
+  avancoPorCodigo: Record<string, { avanco: number; previsto: number; realizado: number }>;
   total: number;
   abrir?: string[]; // códigos que já começam com as tarefas filhas abertas (?abrir=1.18)
   children?: ReactNode;
-}) {
+}
+
+/** Linhagem: projeto › desenho › código de tarefa › tarefas filhas, descendo código dentro de código. */
+export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, abrir = [], children }: Props) {
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState<SituacaoTarefa | "todas">("todas");
   const [abertos, setAbertos] = useState<Set<string>>(() => new Set(abrir));
+  const filhas = (cod: string) => filhasPorCodigo[cod] ?? [];
 
   const contagem = useMemo(() => {
     const c: Record<string, number> = { todas: 0 };
@@ -74,13 +76,90 @@ export function Linhagem({
   }, [desenhos, busca, situacao]);
 
   const mostrando = visiveis.reduce((s, d) => s + d.codigos.length, 0);
-  const alternar = (cod: string) =>
+  const alternar = (chave: string) =>
     setAbertos((a) => {
       const n = new Set(a);
-      if (n.has(cod)) n.delete(cod);
-      else n.add(cod);
+      if (n.has(chave)) {
+        // fechar um nível fecha também o que estava aberto abaixo dele
+        for (const k of [...n]) if (k === chave || k.startsWith(chave + SEP)) n.delete(k);
+      } else n.add(chave);
       return n;
     });
+  const abrirTudo = (cod: string) => setAbertos((a) => new Set([...a, cod, ...caminhosDaLinhagem(cod, filhas)]));
+  const recolherTudo = (cod: string) => setAbertos((a) => new Set([...a].filter((k) => k !== cod && !k.startsWith(cod + SEP))));
+
+  /** Lista de tarefas filhas de `caminho` (o último código do caminho), com os níveis abaixo. */
+  const renderFilhas = (caminho: string[]): ReactNode => {
+    const pai = caminho[caminho.length - 1];
+    const lista = filhas(pai);
+    const raiz = caminho[0];
+    const temNiveis = caminho.length === 1 && caminhosDaLinhagem(raiz, filhas, 2).length > 0;
+    return (
+      <ul className="lin-filhas" id={`filhas-${caminho.join(SEP)}`}>
+        {temNiveis && (
+          <li className="lin-acoes">
+            <button className="btn sec" type="button" onClick={() => abrirTudo(raiz)}>
+              Abrir a linhagem completa
+            </button>
+            <button className="btn sec" type="button" onClick={() => recolherTudo(raiz)}>
+              Recolher
+            </button>
+          </li>
+        )}
+        {lista.map((f) => {
+          const chave = [...caminho, f.tarFilho].join(SEP);
+          const desce = origemDesce(f.tipo) && !caminho.includes(f.tarFilho) && filhas(f.tarFilho).length > 0;
+          const aberto = desce && abertos.has(chave);
+          const proprio = f.tipo === "outra" ? avancoPorCodigo[f.tarFilho] : undefined;
+          const nFilhas = filhas(f.tarFilho).length;
+          return (
+            <li key={chave}>
+              <div className="lin-filha">
+                <span>
+                  <span className="rotulo">{caminho.length === 1 ? "Tarefa filha" : `${caminho.join(" › ")} ›`}</span>
+                  {origemDesce(f.tipo) ? (
+                    <Link className="lin-filha-t" href={`/tarefa/${encodeURIComponent(f.tarFilho)}`}>
+                      {f.titulo}
+                    </Link>
+                  ) : (
+                    <b>{f.titulo}</b>
+                  )}
+                </span>
+                <Avanco
+                  valor={f.previsto > 0 ? f.realizado / f.previsto : 0}
+                  rotulo={`${num(f.realizado, 1)} de ${num(f.previsto, 1)} em ${pai === "RETRABALHO" ? "Retrabalho" : pai}`}
+                />
+                <span className="origem-n">
+                  {num(f.componentes)} componentes · {num(f.pendentes)} pendentes de baixa
+                  {proprio && (
+                    <>
+                      <br />
+                      <span className="lin-proprio">
+                        Código {f.tarFilho}: <b>{pct(proprio.avanco)}</b> do saldo ({num(proprio.realizado, 1)} de {num(proprio.previsto, 1)})
+                      </span>
+                    </>
+                  )}
+                </span>
+                {desce && (
+                  <button
+                    className="lin-abrir"
+                    type="button"
+                    aria-expanded={aberto}
+                    aria-controls={`filhas-${chave}`}
+                    aria-label={`${aberto ? "Fechar" : "Abrir"} as ${nFilhas} tarefas filhas de ${f.tarFilho}`}
+                    onClick={() => alternar(chave)}
+                  >
+                    {num(nFilhas)} {nFilhas === 1 ? "filha" : "filhas"}
+                  </button>
+                )}
+              </div>
+              {aberto && renderFilhas([...caminho, f.tarFilho])}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   return (
     <>
@@ -138,6 +217,7 @@ export function Linhagem({
                 <ul className="lin-cods">
                   {d.codigos.map((t) => {
                     const aberto = abertos.has(t.cod);
+                    const n = filhas(t.cod).length;
                     return (
                       <li key={t.cod}>
                         <Link className="card lin-cod" href={`/tarefa/${encodeURIComponent(t.cod)}`}>
@@ -151,50 +231,22 @@ export function Linhagem({
                             ›
                           </span>
                         </Link>
-                        {t.filhas.length > 0 && (
+                        {n > 0 ? (
                           <button
                             className="lin-abrir"
                             type="button"
                             aria-expanded={aberto}
                             aria-controls={`filhas-${t.cod}`}
-                            aria-label={`${aberto ? "Fechar" : "Abrir"} as ${t.filhas.length} tarefas filhas de ${t.cod}`}
+                            aria-label={`${aberto ? "Fechar" : "Abrir"} as ${n} tarefas filhas de ${t.cod}`}
                             title="Tarefas filhas"
                             onClick={() => alternar(t.cod)}
                           >
-                            {num(t.filhas.length)} {t.filhas.length === 1 ? "filha" : "filhas"}
+                            {num(n)} {n === 1 ? "filha" : "filhas"}
                           </button>
+                        ) : (
+                          <span className="lin-abrir-vazio" />
                         )}
-                        {t.filhas.length === 0 && <span className="lin-abrir-vazio" />}
-                        {aberto && (
-                          <ul className="lin-filhas" id={`filhas-${t.cod}`}>
-                            {t.filhas.map((f) => {
-                              const conteudo = (
-                                <>
-                                  <span>
-                                    <span className="rotulo">Tarefa filha</span>
-                                    <b>{f.titulo}</b>
-                                  </span>
-                                  <Avanco valor={f.previsto > 0 ? f.realizado / f.previsto : 0} rotulo={`${num(f.realizado, 1)} de ${num(f.previsto, 1)}`} />
-                                  <span className="origem-n">
-                                    {num(f.componentes)} componentes · {num(f.pendentes)} pendentes de baixa
-                                  </span>
-                                </>
-                              );
-                              const linkavel = f.tipo === "outra" || (f.tipo === "retrabalho" && t.cod !== f.tarFilho);
-                              return (
-                                <li key={f.tarFilho}>
-                                  {linkavel ? (
-                                    <Link className="lin-filha" href={`/tarefa/${encodeURIComponent(f.tarFilho)}`}>
-                                      {conteudo}
-                                    </Link>
-                                  ) : (
-                                    <div className="lin-filha">{conteudo}</div>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
+                        {aberto && renderFilhas([t.cod])}
                       </li>
                     );
                   })}
@@ -205,7 +257,7 @@ export function Linhagem({
         )}
         <p className="nota" aria-live="polite">
           Mostrando {num(mostrando)} de {num(total)} códigos de tarefa. A linhagem agrupa os códigos pelo desenho; as tarefas filhas de cada código são as
-          mesmas de “De onde vem o saldo”.
+          mesmas de “De onde vem o saldo”. Quando a filha é outro código, abra as filhas dela para descer a linhagem.
         </p>
       </section>
     </>

@@ -426,3 +426,88 @@ th[aria-sort=descending] .ordena:after{content:" ↓"}
 .pag-n span.btn[aria-disabled=true]{opacity:.45;cursor:not-allowed;min-height:var(--delp-toque);padding:0 14px;font-size:15px;font-weight:600}
 a.filtro-ativo{text-decoration:none}
 a.filtro-ativo:hover{color:var(--delp-branco);background:var(--delp-vermelho);border-color:var(--delp-vermelho)}
+
+/* Código de tarefa: % de avanço do saldo de cada execução (pedido em 16/11) */
+.exec-linha{row-gap:3px;padding:8px 16px 10px 12px}
+.exec-linha .exec-pct{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.exec-linha .exec-meta{grid-column:1/-1;font-size:13px;color:var(--delp-texto-apoio)}
+.exec-linha .barra{grid-column:1/-1;height:6px}
+
+/* Linhagem completa: código dentro de código (pedido em 16/11) */
+.lin-filha{flex-wrap:wrap}
+.lin-filha-t{font-weight:700;color:var(--delp-preto);text-decoration:underline;text-underline-offset:3px;display:block}
+.lin-filha-t:hover{color:var(--delp-vermelho)}
+.lin-proprio{font-size:13px;color:var(--delp-preto)}
+.lin-filha .lin-abrir{margin-left:auto}
+.lin-acoes{display:flex;flex-wrap:wrap;gap:8px;padding-left:20px}
+.lin-acoes:before{display:none}
+.lin-acoes .btn.sec{min-height:var(--delp-toque);padding:0 12px;font-size:14px;font-weight:600}
+
+/* ---------- 7. GESTÃO: KPIs para o celular (pedido em 16/11) ---------- */
+/* Feita primeiro para o telefone; no tablet e no computador os blocos se espalham em colunas. */
+.g-pagina{min-height:100vh}
+.g-topo{position:sticky;top:0;z-index:5;background:var(--delp-branco);border-bottom:1px solid var(--delp-linha)}
+.g-topo-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px max(14px,env(safe-area-inset-left,0px))}
+.g-marca{display:flex;align-items:center;gap:10px;min-width:0;min-height:var(--delp-toque);text-decoration:none;color:var(--delp-preto)}
+.g-marca img{height:24px;width:auto;flex:none}
+.g-marca span{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.g-marca b{font-size:16px}
+.g-marca small{font-size:12px;color:var(--delp-texto-apoio);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-acoes{display:flex;align-items:center;gap:4px;flex:none}
+.g-link{display:inline-flex;align-items:center;min-height:var(--delp-toque);padding:0 10px;font-size:14px;font-weight:600;color:var(--delp-preto)}
+.g-main{max-width:1100px;margin:0 auto;padding:12px max(14px,env(safe-area-inset-left,0px)) 32px;display:flex;flex-direction:column;gap:12px}
+.g-hero{padding:14px 16px;display:flex;flex-direction:column;gap:6px;border-top:3px solid var(--delp-vermelho)}
+.g-hero-v{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.g-hero-v>b{font-size:44px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.g-hero .barra{height:10px}
+.g-delta{font-size:14px;font-weight:600;color:var(--delp-texto-apoio)}
+.g-bom{color:var(--delp-ok)}
+.g-ruim{color:var(--delp-vermelho)}
+.g-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.g-kpi{padding:12px 14px;display:flex;flex-direction:column;gap:3px;border-top:3px solid var(--delp-preto);min-width:0}
+.g-kpi-v{font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.g-kpi .stat-d,.g-kpi .g-delta{font-size:13px}
+.g-grade{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.g-bloco{padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.g-bloco h2{font-size:18px;font-weight:700}
+.g-linhas{list-style:none;padding:0;display:flex;flex-direction:column;gap:12px}
+.g-linhas li{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 10px;align-items:baseline}
+.g-linhas li .barra{grid-column:1/-1}
+.g-pct{font-size:13px;color:var(--delp-texto-apoio);font-variant-numeric:tabular-nums}
+.g-grupo{min-width:44px}
+.g-barra-pend>span{background:var(--delp-vermelho)}
+.g-barra-parcial>span{background:var(--delp-parcial)}
+.g-barra-ok>span{background:var(--delp-ok)}
+.g-top{list-style:none;padding:0;display:flex;flex-direction:column}
+.g-top li+li{border-top:1px solid var(--delp-linha-suave)}
+.g-top a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;min-height:var(--delp-toque);text-decoration:none;color:var(--delp-preto)}
+.g-top a:hover{color:var(--delp-preto);background:var(--delp-fundo-suave)}
+.g-top-t{grid-column:1/-1;font-size:15px;overflow-wrap:anywhere}
+.g-top-n{grid-column:1/-1;font-size:14px}
+.g-grafico{position:relative;padding-top:54px}
+.g-grafico svg{display:block;max-width:100%;touch-action:pan-y}
+.g-tooltip{position:absolute;top:0;transform:translateX(-50%);padding:6px 10px;border-radius:var(--delp-raio-campo);background:var(--delp-preto);color:var(--delp-branco);font-size:14px;white-space:nowrap;pointer-events:none;display:flex;flex-direction:column;line-height:1.25}
+.g-tooltip small{font-size:12px;opacity:.85}
+.g-linha-grade{stroke:var(--delp-neutro-medio);stroke-opacity:.55;stroke-width:1}
+.g-eixo{font-size:12px;fill:var(--delp-texto-apoio)}
+.g-linha{fill:none;stroke:var(--delp-preto);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.g-ponto{fill:var(--delp-preto);stroke:var(--delp-branco);stroke-width:2}
+.g-ponto-atual{fill:var(--delp-vermelho)}
+.g-cruz{stroke:var(--delp-neutro-medio);stroke-dasharray:3 3}
+.g-alvo{fill:transparent;cursor:crosshair}
+.g-tabela summary{min-height:var(--delp-toque);display:inline-flex;align-items:center;font-size:14px;font-weight:600;text-decoration:underline}
+.g-vazio{padding:12px 14px;border-radius:var(--delp-raio-campo);background:var(--delp-fundo-suave);font-size:15px}
+.g-fonte{text-align:center}
+/* atalho para a Gestão que só aparece no celular, no Painel */
+.so-celular{display:none}
+@media (max-width:700px){
+  .so-celular{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:var(--delp-toque);padding:10px 14px;border-radius:var(--delp-raio-campo);background:var(--delp-preto);color:var(--delp-branco);font-weight:600;text-decoration:none}
+  .so-celular:hover{color:var(--delp-branco)}
+}
+@media (min-width:700px){
+  .g-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-grade>.g-bloco:first-child{grid-column:1/-1}
+  .g-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .g-hero-v>b{font-size:52px}
+}
+@media (max-width:359px){.g-kpis{grid-template-columns:minmax(0,1fr)}}

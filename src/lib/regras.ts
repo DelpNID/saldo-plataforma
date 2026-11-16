@@ -223,6 +223,34 @@ export function resumirOrigens(pai: string, comps: CompBase[]): Origem[] {
   );
 }
 
+/** Tarefa filha que é outro código (ou o retrabalho) pode ter as próprias filhas: a linhagem desce por ela. */
+export function origemDesce(tipo: TipoOrigem): boolean {
+  return tipo === "outra" || tipo === "retrabalho";
+}
+
+/**
+ * Todos os caminhos que dá para abrir abaixo de um código ("1.05>1.30", "1.05>1.30>2.10"...),
+ * sem repetir código no mesmo caminho (evita laço) e até `maxNivel` níveis.
+ */
+export function caminhosDaLinhagem(
+  cod: string,
+  filhas: (c: string) => { tarFilho: string; tipo: TipoOrigem }[],
+  maxNivel = 12,
+): string[] {
+  const out: string[] = [];
+  const descer = (caminho: string[]) => {
+    if (caminho.length >= maxNivel) return;
+    for (const f of filhas(caminho[caminho.length - 1])) {
+      if (!origemDesce(f.tipo) || caminho.includes(f.tarFilho) || filhas(f.tarFilho).length === 0) continue;
+      const novo = [...caminho, f.tarFilho];
+      out.push(novo.join(">"));
+      descer(novo);
+    }
+  };
+  descer([cod]);
+  return out;
+}
+
 export function tituloOrigem(o: Pick<Origem, "tipo" | "tarFilho">, pai: string): string {
   if (o.tipo === "material") return "Material direto";
   if (o.tipo === "propria") return `Fabricado nesta tarefa (${pai})`;
@@ -278,6 +306,8 @@ export interface Execucao {
   estruturas: number;
   pendentes: number;
   opsSemSaldo: number;
+  previsto: number; // soma de PREVISTO dos componentes da execução (mesma conta do código de tarefa)
+  realizado: number; // soma de APONTADO2
 }
 
 /**
@@ -364,6 +394,8 @@ export function montarArvore(comps: CompBase[], nomeOp: (op: string) => string |
       estruturas: estruturas.size,
       pendentes: linhas.filter((c) => statusMaterial(c.apontado) === "pendente").length,
       opsSemSaldo: [...opsDistintas.values()].filter((o) => o.status !== "ok").length,
+      previsto: linhas.reduce((s, c) => s + c.previsto, 0),
+      realizado: linhas.reduce((s, c) => s + c.apontado2, 0),
     });
   }
   return execs.sort((a, b) => numero(a.exec) - numero(b.exec) || a.exec.localeCompare(b.exec));
