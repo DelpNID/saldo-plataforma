@@ -1,11 +1,11 @@
 // Os dados que a moldura (barra lateral e topo) mostra em toda tela logada:
-// o projeto no seletor, o número de Pendências na barra e o arquivo do rodapé.
+// o projeto no seletor e o número de Pendências na barra.
 // Só servidor. Mesma consulta que o antigo Topo.tsx fazia a cada página.
 import type { ProjetoOpcao } from "@/components/SeletorProjeto";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num, pct, quando } from "@/lib/formato";
 
-export async function dadosDaMoldura(): Promise<{ projetos: ProjetoOpcao[]; pendentes: number; arquivo: string | null }> {
+export async function dadosDaMoldura(): Promise<{ projetos: ProjetoOpcao[]; pendentes: number }> {
   const [cargas, ativa] = await Promise.all([
     prisma.carga.findMany({ where: { ativa: true }, orderBy: { id: "desc" } }),
     cargaAtiva(),
@@ -25,6 +25,5 @@ export async function dadosDaMoldura(): Promise<{ projetos: ProjetoOpcao[]; pend
   return {
     projetos,
     pendentes: iAtiva >= 0 ? pendentesPorCarga[iAtiva] : 0,
-    arquivo: ativa?.arquivo ?? null,
   };
 }

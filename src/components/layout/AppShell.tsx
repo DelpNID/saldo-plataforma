@@ -3,10 +3,8 @@
 // Origem: delp-visto@f66a6c3 src/components/layout/AppShell.tsx
 // Desvios: sem useAuth e sem a saída por inatividade da portaria (o Ascent tem uma
 //   senha de equipe); o conteúdo vem por `children` (layout do App Router) em vez do
-//   <Outlet/>; projetos, selos e o arquivo da carga chegam por prop do layout do
-//   servidor; o rodapé de hoje ("Delp · Divulgação interna · Fonte") fica no fim do
-//   main, em txt-2 (o muted fica abaixo do AA sobre o bg-2); na impressão o recuo da
-//   barra sai (print:!pl-0 — sem o !, o shell:pl-[264px] ganharia). Ver docs/visto-desvios.md.
+//   <Outlet/>; projetos e selos chegam por prop do layout do servidor; na impressão o
+//   recuo da barra sai (print:!pl-0 — sem o !, o shell:pl-[264px] ganharia). Ver docs/visto-desvios.md.
 // -----------------------------------------------------------------------------
 // AppShell.tsx — a moldura das telas logadas: barra lateral + topo + conteúdo.
 // -----------------------------------------------------------------------------
@@ -21,13 +19,11 @@ import { Topbar } from './Topbar';
 export function AppShell({
   projetos,
   selos,
-  arquivo,
   barraRecolhida: recolhidaInicial = false,
   children,
 }: {
   projetos: ProjetoOpcao[];
   selos: Partial<Record<string, number>>;
-  arquivo: string | null;
   /** O estado da barra lido do cookie no servidor (primeira pintura certa). */
   barraRecolhida?: boolean;
   children: ReactNode;
@@ -99,12 +95,6 @@ export function AppShell({
         {/* Sem teto de largura: tetos são POR BLOCO (.grade-indicadores, 70ch). */}
         <main className="w-full flex-1 px-4 py-6 md:px-6 md:py-8 print:p-0">
           {children}
-          <p className="mt-8 flex flex-wrap justify-between gap-x-5 gap-y-1 text-xs text-txt-2">
-            <span>
-              <b className="font-semibold text-txt">Delp</b> · Divulgação interna
-            </span>
-            <span>{arquivo ? `Fonte: ${arquivo}` : 'Fonte: planilha de saldo'}</span>
-          </p>
         </main>
       </div>
     </div>

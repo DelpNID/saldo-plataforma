@@ -2,7 +2,8 @@
 
 // Origem: delp-visto@f66a6c3 src/components/ui/Segmentado.tsx
 // Desvios: botões com 44px de altura (min-h-11, inline-flex para centrar) — alvo de
-//   toque do Ascent, usado no celular; no Visto eles têm ~30px. Ver docs/visto-desvios.md.
+//   toque do Ascent, usado no celular; no Visto eles têm ~30px. A opção escolhida fica
+//   em vermelho (no Visto, branca), a pedido do responsável. Ver docs/visto-desvios.md.
 // -----------------------------------------------------------------------------
 // Segmentado.tsx — o alternador de RECORTE de um mesmo bloco (14/09/2026):
 // duas ou três opções coladas, a escolhida em branco sobre o trilho cinza.
@@ -42,7 +43,7 @@ export function Segmentado<T extends string>({
           className={clsx(
             'inline-flex min-h-11 items-center whitespace-nowrap rounded-[8px] px-3 py-1 text-xs font-semibold transition-colors',
             valor === o.id
-              ? 'bg-bg text-txt shadow-subtle'
+              ? 'bg-delp-red text-white shadow-subtle'
               : 'text-txt-2 hover:text-txt',
           )}
         >

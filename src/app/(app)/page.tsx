@@ -1,6 +1,6 @@
 import { ChevronRight, Upload } from "lucide-react";
 import Link from "next/link";
-import { BarrasSaldo, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
+import { BarrasSaldo, FaixaSituacao, FeitoDoTotal, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
 import { ListaTarefas, type TarefaResumo } from "@/components/ListaTarefas";
 import { EstadoVazio } from "@/components/layout/EstadoVazio";
 import { buttonVariants } from "@/components/ui/Button";
@@ -48,6 +48,11 @@ export default async function Painel() {
   const concluidas = situacoes.filter((s) => s === "concluida").length;
   const semAvanco = situacoes.filter((s) => s === "sem-avanco").length;
   const andamento = situacoes.filter((s) => s === "andamento").length;
+  // Detalhe dos cards (16/11): só o que a carga já traz — execuções feitas = total − pendentes (EXEC. PEND);
+  // componentes baixados = total − pendentes de baixa (APONTADO = 0).
+  const execFeitas = Math.max(0, carga.totalExecucoes - carga.totalExecPend);
+  const codigosExecPend = tarefas.filter((t) => t.execPend > 0).length;
+  const codigosPendBaixa = tarefas.filter((t) => t.pendMaterial > 0).length;
   const lista: TarefaResumo[] = tarefas.map((t) => ({
     cod: t.codTarefa,
     descricao: descricaoCurta(t.descricao),
@@ -91,14 +96,27 @@ export default async function Painel() {
           rotulo="Códigos de tarefa"
           valor={num(semAvanco)}
           sufixo=" sem avanço"
-          detalhe={`${num(andamento)} em andamento · ${num(concluidas)} concluídos · ${num(tarefas.length)} no total`}
-        />
+          detalhe={`${num(tarefas.length)} códigos de tarefa no projeto`}
+        >
+          <FaixaSituacao semAvanco={semAvanco} andamento={andamento} concluidas={concluidas} />
+        </TileIndicador>
         <TileIndicador
           rotulo="Execuções pendentes"
           valor={num(carga.totalExecPend, 1)}
-          detalhe={`de ${num(carga.totalExecucoes)} execuções`}
-        />
-        <TileIndicador rotulo="Pendentes de baixa" valor={num(pendComp)} detalhe={`de ${num(totalComp)} componentes`}>
+          detalhe={`${num(carga.totalExecucoes)} execuções no total`}
+        >
+          <FeitoDoTotal feito={execFeitas} total={carga.totalExecucoes} rotulo="executadas" casas={1} />
+          <p className="text-xs text-txt-2">
+            <b className="font-mono font-bold text-txt">{num(codigosExecPend)}</b> de <span className="font-mono">{num(tarefas.length)}</span>{" "}
+            códigos de tarefa com execução pendente
+          </p>
+        </TileIndicador>
+        <TileIndicador rotulo="Pendentes de baixa" valor={num(pendComp)} detalhe={`${num(totalComp)} componentes no total`}>
+          <FeitoDoTotal feito={Math.max(0, totalComp - pendComp)} total={totalComp} rotulo="já baixados" />
+          <p className="text-xs text-txt-2">
+            <b className="font-mono font-bold text-txt">{num(codigosPendBaixa)}</b> de <span className="font-mono">{num(tarefas.length)}</span>{" "}
+            códigos de tarefa com pendência de baixa
+          </p>
           <Link href="/pendencias" className={`${LINK_TEXTO} self-start text-xs`}>
             Ver a lista de pendências
           </Link>

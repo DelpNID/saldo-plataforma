@@ -124,9 +124,7 @@ export default async function Pendencias({ searchParams }: Props) {
   ]);
   const tarefas = porTarefa.sort((a, b) => compararCodigo(a.tarPai, b.tarPai));
   const grupos = porGrupo.sort((a, b) => b._count._all - a._count._all);
-  const totalPendentes = porTarefa.reduce((s, t) => s + t._count._all, 0);
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const filtrado = Boolean(tarefa || grupo || q || plano);
 
   // Quantos componentes cada grupo (código › execução) tem no recorte inteiro, não só nesta página
   const tarPaisPagina = [...new Set(linhas.map((c) => c.tarPai))];
@@ -197,16 +195,6 @@ export default async function Pendencias({ searchParams }: Props) {
     <div className="flex flex-col gap-4">
       {/* A trilha do topo nomeia a tela; o título fica para leitor de tela (regra do Visto). */}
       <h1 className="sr-only">Pendências de baixa</h1>
-      <p className="text-sm text-txt-2">
-        <b className="font-mono font-bold text-txt">{num(total)}</b> componentes sem apontamento
-        {filtrado ? (
-          <>
-            {" "}
-            · de <span className="font-mono">{num(totalPendentes)}</span> pendentes de baixa
-          </>
-        ) : null}
-        <span className="block text-xs">Coluna APONTADO = 0 na aba Componentes.</span>
-      </p>
 
       {/* Filtros e filtros ativos parados ao rolar, abaixo do topo de 64px (como o .fixo de antes). */}
       <div className="sticky top-16 z-10 -mx-4 flex flex-col gap-2 border-b border-subtle bg-bg-2 px-4 py-2.5 md:-mx-6 md:px-6 print:hidden">
