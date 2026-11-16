@@ -1,6 +1,11 @@
 "use client";
 
+import { Download, Printer } from "lucide-react";
 import { useEffect, useState, type MouseEvent } from "react";
+import { buttonVariants } from "./ui/Button";
+
+/** Botão de ferramenta de uma lista (exportar, imprimir, expandir): o ghost do Visto, compacto. */
+export const BOTAO_FERRAMENTA = `${buttonVariants.ghost} !px-3.5 !text-[13px] print:hidden`;
 
 /** Cópia imediata, dentro do próprio toque (funciona mesmo quando a API nova fica esperando permissão). */
 function copiarNaHora(valor: string, voltarFoco: HTMLElement | null): boolean {
@@ -45,11 +50,19 @@ export function Copiar({ valor, tipo }: { valor: string; tipo: "OP" | "Código" 
 
   return (
     <>
-      <button type="button" className="copia mono" title={tipo === "OP" ? "Tocar para copiar a OP" : "Tocar para copiar o código"} onClick={copiar}>
+      <button
+        type="button"
+        className="-my-[7px] min-h-11 text-left font-mono font-semibold text-txt underline decoration-border-med decoration-dashed underline-offset-4 transition-colors hover:text-delp-red"
+        title={tipo === "OP" ? "Tocar para copiar a OP" : "Tocar para copiar o código"}
+        onClick={copiar}
+      >
         {valor}
       </button>
       {aviso && (
-        <span className="aviso-copia" role="status">
+        <span
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-btn bg-txt px-4 py-3 text-sm font-semibold text-bg shadow-strong"
+          role="status"
+        >
           {aviso === "ok" ? `${tipo} ${valor} copiado` : `Não consegui copiar. Selecione e copie: ${valor}`}
         </span>
       )}
@@ -79,7 +92,8 @@ export function Exportar({ nome, cabecalho, linhas }: { nome: string; cabecalho:
     URL.revokeObjectURL(url);
   }
   return (
-    <button className="btn sec" type="button" onClick={baixar} disabled={linhas.length === 0}>
+    <button className={BOTAO_FERRAMENTA} type="button" onClick={baixar} disabled={linhas.length === 0}>
+      <Download size={15} aria-hidden="true" />
       Exportar
     </button>
   );
@@ -87,7 +101,8 @@ export function Exportar({ nome, cabecalho, linhas }: { nome: string; cabecalho:
 
 export function Imprimir() {
   return (
-    <button className="btn sec" type="button" onClick={() => window.print()}>
+    <button className={BOTAO_FERRAMENTA} type="button" onClick={() => window.print()}>
+      <Printer size={15} aria-hidden="true" />
       Imprimir
     </button>
   );

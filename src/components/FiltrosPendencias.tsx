@@ -1,7 +1,9 @@
 "use client";
 
+import { clsx } from "clsx";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { CLASSE_CAMPO } from "./ui/Campo";
 
 export interface ValoresFiltro {
   q?: string;
@@ -43,33 +45,41 @@ export function FiltrosPendencias({ valores, tarefas, grupos, planos }: { valore
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca]);
 
+  const campo = clsx(CLASSE_CAMPO, "!w-auto max-w-full");
   return (
     <form
-      className="filtros"
+      className="flex flex-wrap items-center gap-2.5"
       role="search"
       onSubmit={(e) => {
         e.preventDefault();
         ir({ q: busca.trim() || undefined });
       }}
     >
-      <label className="sr" htmlFor="q">Buscar</label>
-      <input id="q" className="campo busca" type="search" placeholder="Código, nome, OP, estrutura ou plano" value={busca} onChange={(e) => setBusca(e.target.value)} />
-      <label className="sr" htmlFor="tarefa">Código de tarefa</label>
-      <select id="tarefa" className="campo" value={valores.tarefa ?? ""} onChange={(e) => ir({ tarefa: e.target.value || undefined })}>
+      <label className="sr-only" htmlFor="q">Buscar</label>
+      <input
+        id="q"
+        className={clsx(CLASSE_CAMPO, "min-w-0 flex-[1_1_260px] sm:w-auto")}
+        type="search"
+        placeholder="Código, nome, OP, estrutura ou plano"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+      />
+      <label className="sr-only" htmlFor="tarefa">Código de tarefa</label>
+      <select id="tarefa" className={campo} value={valores.tarefa ?? ""} onChange={(e) => ir({ tarefa: e.target.value || undefined })}>
         <option value="">Todos os códigos</option>
         {tarefas.map((o) => (
           <option key={o.valor} value={o.valor}>{o.rotulo}</option>
         ))}
       </select>
-      <label className="sr" htmlFor="grupo-mat">Grupo de material</label>
-      <select id="grupo-mat" className="campo" value={valores.grupo ?? ""} onChange={(e) => ir({ grupo: e.target.value || undefined })}>
+      <label className="sr-only" htmlFor="grupo-mat">Grupo de material</label>
+      <select id="grupo-mat" className={campo} value={valores.grupo ?? ""} onChange={(e) => ir({ grupo: e.target.value || undefined })}>
         <option value="">Todos os grupos</option>
         {grupos.map((o) => (
           <option key={o.valor} value={o.valor}>{o.rotulo}</option>
         ))}
       </select>
-      <label className="sr" htmlFor="plano">Plano de corte</label>
-      <select id="plano" className="campo" value={valores.plano ?? ""} onChange={(e) => ir({ plano: e.target.value || undefined })}>
+      <label className="sr-only" htmlFor="plano">Plano de corte</label>
+      <select id="plano" className={campo} value={valores.plano ?? ""} onChange={(e) => ir({ plano: e.target.value || undefined })}>
         <option value="">Todos os materiais</option>
         {planos.map((o) => (
           <option key={o.valor} value={o.valor}>{o.rotulo}</option>

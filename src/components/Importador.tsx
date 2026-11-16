@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { clsx } from "clsx";
+import { Check, FileSpreadsheet, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { RespostaLeitor, ResumoLeitura } from "@/lib/leitor.worker";
+import { Button, buttonVariants } from "./ui/Button";
+import { CLASSE_CAMPO } from "./ui/Campo";
 
 interface Lida {
   nome: string;
@@ -23,29 +28,65 @@ const n = (v: number) => fmt.format(v);
 const LIMITE_ENVIO = 4_400_000;
 const ETAPAS = ["Escolher a planilha", "Conferir o resumo", "Atualizado"];
 
+/** Caixas de mensagem nos tokens de estado do Visto (texto + borda; a cor nunca sozinha). */
+const ERRO = "rounded-btn border border-danger bg-danger/10 px-3.5 py-2.5 text-sm font-semibold text-delp-red";
+const AVISO = "rounded-btn border border-warning-forte bg-warning/10 px-3.5 py-2.5 text-sm font-semibold text-txt";
+const APOIO = "text-sm text-txt-2";
+const BLOCO = "rounded-card border border-subtle bg-bg shadow-subtle";
+
 function Cronometro({ desde }: { desde: number }) {
   const [, tique] = useState(0);
   useEffect(() => {
     const t = setInterval(() => tique((x) => x + 1), 1000);
     return () => clearInterval(t);
   }, []);
-  return <span className="mono">{Math.round((Date.now() - desde) / 1000)} s</span>;
+  return <span className="font-mono">{Math.round((Date.now() - desde) / 1000)} s</span>;
 }
 
 function Etapas({ atual }: { atual: number }) {
   return (
-    <ol className="etapas card" aria-label="Passos">
-      {ETAPAS.map((t, i) => (
-        <li key={t} className={`etapa${i + 1 < atual ? " feita" : ""}`} aria-current={i + 1 === atual ? "step" : undefined}>
-          <b>{i + 1}</b>
-          {t}
-        </li>
-      ))}
+    <ol className={clsx(BLOCO, "grid grid-cols-1 overflow-hidden sm:grid-cols-3")} aria-label="Passos">
+      {ETAPAS.map((t, i) => {
+        const feita = i + 1 < atual;
+        const corrente = i + 1 === atual;
+        return (
+          <li
+            key={t}
+            aria-current={corrente ? "step" : undefined}
+            className={clsx(
+              "flex min-h-[52px] items-center gap-2.5 border-b-[3px] px-4 py-2 font-semibold",
+              i > 0 && "border-t border-t-subtle sm:border-l sm:border-l-subtle sm:border-t-0",
+              corrente ? "border-b-delp-red text-txt" : "border-b-transparent",
+              feita ? "text-txt" : !corrente && "text-txt-2",
+            )}
+          >
+            <b
+              className={clsx(
+                "grid h-7 w-7 flex-none place-items-center rounded-full font-mono text-sm",
+                feita ? "bg-success-forte text-success-forte-texto" : corrente ? "bg-txt text-bg" : "bg-bg-3 text-txt",
+              )}
+            >
+              {feita ? <Check size={15} aria-label="feito" /> : i + 1}
+            </b>
+            {t}
+          </li>
+        );
+      })}
     </ol>
   );
 }
 
+function Dado({ rotulo, children, destaque }: { rotulo: string; children: ReactNode; destaque?: boolean }) {
+  return (
+    <div className={clsx("rounded-btn border border-subtle bg-bg-2 px-3.5 py-3", destaque && "col-span-full border-t-[3px] border-t-delp-red")}>
+      <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-txt-2">{rotulo}</dt>
+      <dd className={clsx("mt-0.5 font-mono font-bold text-txt", destaque ? "text-[30px] leading-tight" : "text-[22px]")}>{children}</dd>
+    </div>
+  );
+}
+
 export function Importador({ habilitada }: { habilitada: boolean }) {
+  const router = useRouter();
   const [fase, setFase] = useState<Fase>({ tipo: "inicio" });
   const [senha, setSenha] = useState("");
   const [forcar, setForcar] = useState(false);
@@ -110,6 +151,9 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
       if (res.ok) {
         setSenha("");
         setFase({ tipo: "feito", mensagem: corpo.mensagem ?? "Plataforma atualizada." });
+        // A moldura (seletor de projeto, número de Pendências) vive no layout, que não se refaz
+        // sozinho: o refresh traz a carga nova para ela.
+        router.refresh();
       } else {
         if (res.status === 401) setSenha("");
         setFase({ tipo: "pronto", ...lida, erro: { mensagem: corpo.mensagem ?? `Falhou (código ${res.status}). Tente de novo.`, senha: res.status === 401 } });
@@ -127,44 +171,55 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
   const ocupado = fase.tipo === "lendo" || fase.tipo === "enviando";
 
   return (
-    <div className="importador">
+    <div className="flex flex-col gap-4">
       <Etapas atual={etapa} />
       {!habilitada && (
-        <p className="aviso" role="note">
-          <b>Importação pelo site desligada.</b> Falta cadastrar a senha de importação (<span className="mono">IMPORTACAO_SENHA</span>) na Vercel. Enquanto
-          isso, a atualização é feita pelo NID com o comando de carga.
+        <p className={AVISO} role="note">
+          <b>Importação pelo site desligada.</b> Falta cadastrar a senha de importação (<span className="font-mono">IMPORTACAO_SENHA</span>) na
+          Vercel. Enquanto isso, a atualização é feita pelo NID com o comando de carga.
         </p>
       )}
-      <ol className="passos">
+      <ol className="flex max-w-[80ch] list-decimal flex-col gap-1 pl-[22px] text-sm text-txt-2">
         <li>
-          <b>Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.
+          <b className="text-txt">Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.
         </li>
         <li>
-          <b>Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.
+          <b className="text-txt">Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.
         </li>
         <li>
-          <b>Confira o resumo</b>, digite a senha de importação e atualize. A troca acontece de uma vez, só no final.
+          <b className="text-txt">Confira o resumo</b>, digite a senha de importação e atualize. A troca acontece de uma vez, só no final.
         </li>
       </ol>
 
-      <label className={`arquivo card${ocupado ? " ocupado" : ""}`}>
+      <label
+        className={clsx(
+          BLOCO,
+          "relative flex cursor-pointer flex-col items-center gap-1.5 border-2 border-dashed !border-med px-6 py-7 text-center transition-colors hover:!border-delp-red focus-within:!border-delp-red focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-delp-red",
+          ocupado && "cursor-progress opacity-60",
+        )}
+      >
         <input
           type="file"
           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           disabled={ocupado}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           onChange={(e) => {
             escolher(e.target.files?.[0]);
             e.target.value = "";
           }}
         />
-        <span className="arquivo-t">{fase.tipo === "inicio" || fase.tipo === "feito" ? "Escolher a planilha (.xlsx)" : "Escolher outra planilha"}</span>
-        <span className="arquivo-d">
+        <FileSpreadsheet size={26} className="text-delp-red" aria-hidden="true" />
+        <span className="text-lg font-bold text-txt">
+          {fase.tipo === "inicio" || fase.tipo === "feito" ? "Escolher a planilha (.xlsx)" : "Escolher outra planilha"}
+        </span>
+        <span className={clsx(APOIO, "max-w-[70ch]")}>
           A planilha é lida aqui no seu computador. Só os dados das abas Resumo Geral, Componentes, Dados e CNC_PCQ são enviados.
         </span>
       </label>
 
       {fase.tipo === "lendo" && (
-        <p className="card carregando" role="status">
+        <p className={clsx(BLOCO, "flex items-center gap-2.5 px-4 py-3.5 font-semibold text-txt")} role="status">
+          <Loader2 size={18} className="animate-spin text-delp-red" aria-hidden="true" />
           <span>
             Lendo <b>{fase.nome}</b>… <Cronometro desde={fase.desde} /> (costuma levar até 1 minuto)
           </span>
@@ -172,91 +227,71 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
       )}
 
       {fase.tipo === "erroLeitura" && (
-        <p className="erro" role="alert">
+        <p className={ERRO} role="alert">
           {fase.mensagem}
         </p>
       )}
 
       {lida && resumo && (
-        <section className="card resumo-carga" aria-labelledby="t-resumo">
-          <h2 id="t-resumo">Confira antes de atualizar</h2>
-          <p className="arquivo-d">
-            {lida.nome} · projeto <b>{resumo.projeto}</b> · centro de custo {resumo.centroCusto}
-          </p>
-          <dl className="resumo-grade">
-            <div className="destaque">
-              <dt>Avanço do saldo</dt>
-              <dd>{n(resumo.avanco * 100)}%</dd>
-            </div>
-            {resumo.fabric !== null && (
-              <div>
-                <dt>Avanço da fabricação</dt>
-                <dd>{n(resumo.fabric * 100)}%</dd>
-              </div>
-            )}
-            {resumo.raPendentes !== null && (
-              <div>
-                <dt>RA pendente</dt>
-                <dd>{n(resumo.raPendentes)}</dd>
-              </div>
-            )}
-            <div>
-              <dt>Códigos de tarefa</dt>
-              <dd>{n(resumo.tarefas)}</dd>
-            </div>
-            <div>
-              <dt>Componentes</dt>
-              <dd>{n(resumo.componentes)}</dd>
-            </div>
-            <div>
-              <dt>Pendentes de baixa</dt>
-              <dd>{n(resumo.pendentes)}</dd>
-            </div>
-            <div>
-              <dt>OPs</dt>
-              <dd>{n(resumo.ordens)}</dd>
-            </div>
-            <div>
-              <dt>Linhas de plano de corte</dt>
-              <dd>{n(resumo.planos)}</dd>
-            </div>
+        <section className={clsx(BLOCO, "flex flex-col gap-3.5 p-5")} aria-labelledby="t-resumo">
+          <div>
+            <h2 id="t-resumo" className="text-[15px] font-semibold leading-tight text-txt">
+              Confira antes de atualizar
+            </h2>
+            <p className={clsx(APOIO, "mt-1")}>
+              {lida.nome} · projeto <b className="text-txt">{resumo.projeto}</b> · centro de custo{" "}
+              <span className="font-mono">{resumo.centroCusto}</span>
+            </p>
+          </div>
+          <dl className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-2.5">
+            <Dado rotulo="Avanço do saldo" destaque>
+              {n(resumo.avanco * 100)}%
+            </Dado>
+            {resumo.fabric !== null && <Dado rotulo="Avanço da fabricação">{n(resumo.fabric * 100)}%</Dado>}
+            {resumo.raPendentes !== null && <Dado rotulo="RA pendente">{n(resumo.raPendentes)}</Dado>}
+            <Dado rotulo="Códigos de tarefa">{n(resumo.tarefas)}</Dado>
+            <Dado rotulo="Componentes">{n(resumo.componentes)}</Dado>
+            <Dado rotulo="Pendentes de baixa">{n(resumo.pendentes)}</Dado>
+            <Dado rotulo="OPs">{n(resumo.ordens)}</Dado>
+            <Dado rotulo="Linhas de plano de corte">{n(resumo.planos)}</Dado>
           </dl>
-          {!resumo.temAbaCnc && <p className="aviso">A planilha não tem a aba CNC_PCQ: os planos de corte não vão aparecer.</p>}
+          {!resumo.temAbaCnc && <p className={AVISO}>A planilha não tem a aba CNC_PCQ: os planos de corte não vão aparecer.</p>}
           {resumo.cncSemControle > 0 && (
-            <p className="aviso">
+            <p className={AVISO}>
               {n(resumo.cncSemControle)} componentes têm plano na coluna CNC sem linha na aba CNC_PCQ. Eles aparecem como “Fora da aba CNC_PCQ”.
             </p>
           )}
-          {grande && <p className="erro">O envio passou de 4,4 MB. Avise o NID: a planilha cresceu além do limite da Vercel.</p>}
+          {grande && <p className={ERRO}>O envio passou de 4,4 MB. Avise o NID: a planilha cresceu além do limite da Vercel.</p>}
           {resumo.divergencias.length > 0 && (
-            <div className="erro" role="alert">
+            <div className={ERRO} role="alert">
               <p>A soma dos componentes não bate com o Resumo Geral. A planilha parece desatualizada: abra no Excel, salve e escolha de novo.</p>
-              <ul>
+              <ul className="my-1.5 list-disc pl-5 font-medium">
                 {resumo.divergencias.slice(0, 5).map((d) => (
                   <li key={`${d.codTarefa}-${d.campo}`}>
-                    {d.codTarefa} · {d.campo}: planilha {n(d.planilha)} · componentes {n(d.calculado)}
+                    {d.codTarefa} · {d.campo}: planilha <span className="font-mono">{n(d.planilha)}</span> · componentes{" "}
+                    <span className="font-mono">{n(d.calculado)}</span>
                   </li>
                 ))}
               </ul>
-              <label className="marcar">
-                <input type="checkbox" checked={forcar} onChange={(e) => setForcar(e.target.checked)} /> Atualizar assim mesmo
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 font-bold text-txt">
+                <input type="checkbox" className="h-5 w-5" checked={forcar} onChange={(e) => setForcar(e.target.checked)} /> Atualizar assim mesmo
               </label>
             </div>
           )}
           <form
-            className="filtros"
+            className="flex flex-wrap items-center gap-2.5"
             onSubmit={(e) => {
               e.preventDefault();
               void enviar();
             }}
           >
-            <label className="sr" htmlFor="senha-importacao">
+            <label className="sr-only" htmlFor="senha-importacao">
               Senha de importação
             </label>
             <input
               ref={campoSenha}
               id="senha-importacao"
-              className="campo"
+              className={clsx(CLASSE_CAMPO, "!w-auto min-w-0 flex-[0_1_260px]")}
               type="password"
               autoComplete="off"
               placeholder="Senha de importação"
@@ -266,26 +301,26 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
               aria-invalid={erroSenha ? true : undefined}
               aria-describedby={fase.tipo === "pronto" && fase.erro ? "erro-envio" : undefined}
             />
-            <button className="btn" type="submit" disabled={travado || fase.tipo === "enviando"}>
+            <Button type="submit" disabled={travado} loading={fase.tipo === "enviando"}>
               {fase.tipo === "enviando" ? "Atualizando…" : "Atualizar a plataforma"}
-            </button>
+            </Button>
             {fase.tipo === "enviando" && (
-              <span className="arquivo-d" role="status">
+              <span className={APOIO} role="status">
                 Gravando no banco… <Cronometro desde={fase.desde} />
               </span>
             )}
             {habilitada && fase.tipo === "pronto" && !senha && !fase.erro && (
-              <span className="arquivo-d">Digite a senha de importação para liberar o botão.</span>
+              <span className={APOIO}>Digite a senha de importação para liberar o botão.</span>
             )}
           </form>
           {!habilitada && (
-            <p className="erro" role="alert">
-              Não dá para atualizar por aqui: a importação pelo site está desligada (falta a senha de importação na Vercel). Avise o NID; os dados podem ser
-              carregados pelo comando de carga.
+            <p className={ERRO} role="alert">
+              Não dá para atualizar por aqui: a importação pelo site está desligada (falta a senha de importação na Vercel). Avise o NID; os dados podem
+              ser carregados pelo comando de carga.
             </p>
           )}
           {fase.tipo === "pronto" && fase.erro && (
-            <p className="erro" id="erro-envio" role="alert">
+            <p className={ERRO} id="erro-envio" role="alert">
               {fase.erro.mensagem}
             </p>
           )}
@@ -293,9 +328,12 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
       )}
 
       {fase.tipo === "feito" && (
-        <div className="sucesso" role="status">
+        <div
+          className={clsx(BLOCO, "flex flex-wrap items-center justify-between gap-3 border-l-4 !border-l-success-forte px-5 py-3.5 font-semibold text-txt")}
+          role="status"
+        >
           <p>{fase.mensagem}</p>
-          <a className="btn" href="/">
+          <a className={buttonVariants.primary} href="/">
             Ver o painel atualizado
           </a>
         </div>
