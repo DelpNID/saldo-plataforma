@@ -511,3 +511,14 @@ a.filtro-ativo:hover{color:var(--delp-branco);background:var(--delp-vermelho);bo
   .g-hero-v>b{font-size:52px}
 }
 @media (max-width:359px){.g-kpis{grid-template-columns:minmax(0,1fr)}}
+/* Gestão: busca por desenho, código ou equipamento (pedido em 16/11) e balão do gráfico dentro do cartão */
+.g-busca{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.g-busca .campo{width:100%;min-height:var(--delp-toque);font-size:16px}
+.g-busca-res{display:flex;flex-direction:column;gap:6px;padding-top:6px;border-top:1px solid var(--delp-linha)}
+.g-busca-res .g-hero-v>b{font-size:36px}
+.g-busca-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.g-busca-kpis div{padding:8px 10px;border-radius:var(--delp-raio-campo);background:var(--delp-fundo-suave);border:1px solid var(--delp-linha)}
+.g-busca-kpis dt{font-size:var(--delp-rotulo);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--delp-texto-apoio)}
+.g-busca-kpis dd{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.g-busca-kpis small{font-size:13px;font-weight:500;color:var(--delp-texto-apoio)}
+.g-tooltip{max-width:calc(100% - 4px);white-space:normal}

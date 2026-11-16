@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
 import { EtiquetaSituacao } from "@/components/Etiquetas";
 import { cargaAtiva, prisma } from "@/lib/db";
@@ -36,7 +37,7 @@ function Barra({ valor }: { valor: number }) {
   );
 }
 
-export default async function Gestao() {
+export default async function Gestao({ searchParams }: { searchParams: { q?: string } }) {
   const carga = await cargaAtiva();
   if (!carga) {
     return (
@@ -60,7 +61,18 @@ export default async function Gestao() {
     prisma.historico.findMany({ where: { projeto: carga.projeto }, orderBy: { criadoEm: "asc" } }),
     prisma.tarefa.findMany({
       where: { cargaId: carga.id },
-      select: { codTarefa: true, descricao: true, avanco: true, qtdPrevisto: true, qtdRealizada: true, pendMaterial: true, totalComp: true },
+      select: {
+        codTarefa: true,
+        descricao: true,
+        desenho: true,
+        avanco: true,
+        qtdPrevisto: true,
+        qtdRealizada: true,
+        pendMaterial: true,
+        totalComp: true,
+        execucoes: true,
+        execPend: true,
+      },
     }),
   ]);
 
@@ -127,6 +139,23 @@ export default async function Gestao() {
       </header>
 
       <main className="g-main">
+        <BuscaGestao
+          inicial={(searchParams.q ?? "").slice(0, 80)}
+          codigos={tarefas
+            .map((t) => ({
+              cod: t.codTarefa,
+              descricao: descricaoCurta(t.descricao),
+              desenho: t.desenho,
+              previsto: t.qtdPrevisto,
+              realizado: t.qtdRealizada,
+              avanco: t.avanco,
+              pendentes: t.pendMaterial,
+              componentes: t.totalComp,
+              execucoes: t.execucoes,
+              execPend: t.execPend,
+            }))
+            .sort((a, b) => compararCodigo(a.cod, b.cod))}
+        />
         <section className="card g-hero" aria-label="Avanço do saldo">
           <span className="stat-l">Avanço do saldo · {carga.projeto}</span>
           <div className="g-hero-v">

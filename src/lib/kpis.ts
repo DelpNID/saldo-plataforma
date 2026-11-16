@@ -111,3 +111,46 @@ export async function garantirHistorico(prisma: PrismaClient, cargaId: number) {
     },
   });
 }
+
+// ---------- Busca da Gestão: desenho, código de tarefa ou descrição do equipamento ----------
+
+export interface CodigoBusca {
+  cod: string;
+  descricao: string;
+  desenho: string;
+  previsto: number;
+  realizado: number;
+  avanco: number;
+  pendentes: number;
+  componentes: number;
+  execucoes: number;
+  execPend: number;
+}
+
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** Todas as palavras digitadas precisam aparecer no código, na descrição ou no desenho (sem diferenciar acento e maiúscula). */
+export function buscarCodigos<T extends { cod: string; descricao: string; desenho: string }>(lista: T[], q: string): T[] {
+  const termos = semAcento(q).split(/\s+/).filter(Boolean);
+  if (termos.length === 0) return [];
+  return lista.filter((t) => {
+    const alvo = semAcento(`${t.cod} ${t.descricao} ${t.desenho}`);
+    return termos.every((x) => alvo.includes(x));
+  });
+}
+
+/** Soma do recorte: o avanço é realizado ÷ previsto, a mesma conta do projeto inteiro. */
+export function resumirSelecao(lista: CodigoBusca[]) {
+  const s = lista.reduce(
+    (a, t) => ({
+      previsto: a.previsto + t.previsto,
+      realizado: a.realizado + t.realizado,
+      pendentes: a.pendentes + t.pendentes,
+      componentes: a.componentes + t.componentes,
+      execucoes: a.execucoes + t.execucoes,
+      execPend: a.execPend + t.execPend,
+    }),
+    { previsto: 0, realizado: 0, pendentes: 0, componentes: 0, execucoes: 0, execPend: 0 },
+  );
+  return { ...s, codigos: lista.length, desenhos: new Set(lista.map((t) => t.desenho)).size, avanco: avancoDe(s) };
+}

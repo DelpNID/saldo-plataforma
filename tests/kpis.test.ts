@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avancoDe, calcularKpis, dataRef, serieDiaria } from "@/lib/kpis";
+import { avancoDe, buscarCodigos, calcularKpis, dataRef, resumirSelecao, serieDiaria } from "@/lib/kpis";
 import { montarArvore, type CompBase } from "@/lib/regras";
 
 describe("KPIs da Gestão", () => {
@@ -86,5 +86,40 @@ describe("avanço por execução", () => {
       ["2", 4, 0],
     ]);
     expect(avancoDe(ex[0])).toBeCloseTo(2 / 3);
+  });
+});
+
+describe("busca da Gestão", () => {
+  const c = (cod: string, descricao: string, desenho: string, previsto: number, realizado: number, pendentes = 0) => ({
+    cod,
+    descricao,
+    desenho,
+    previsto,
+    realizado,
+    avanco: previsto > 0 ? realizado / previsto : 0,
+    pendentes,
+    componentes: 10,
+    execucoes: 2,
+    execPend: 1,
+  });
+  const lista = [
+    c("1.46", "PIN PILE BUCKET 26IN LOCKING BAR", "090012-35-DA-0300", 100, 0, 30),
+    c("1.52", "PIN PILE BUCKET AXIS PIN", "090012-35-DA-0300", 50, 25, 10),
+    c("1.18", "BUOYANCY PADEYE TYPE BP-2", "090012-35-DA-0229", 110, 3, 109),
+    c("2.10", "PEÇA DE FIXAÇÃO", "FMC-07896-DP-0001", 10, 10),
+  ];
+
+  it("acha por desenho, código ou descrição, sem ligar para acento e maiúscula", () => {
+    expect(buscarCodigos(lista, "090012-35-DA-0300").map((t) => t.cod)).toEqual(["1.46", "1.52"]);
+    expect(buscarCodigos(lista, "1.18").map((t) => t.cod)).toEqual(["1.18"]);
+    expect(buscarCodigos(lista, "pin pile axis").map((t) => t.cod)).toEqual(["1.52"]);
+    expect(buscarCodigos(lista, "fixacao").map((t) => t.cod)).toEqual(["2.10"]);
+    expect(buscarCodigos(lista, "   ")).toEqual([]);
+  });
+
+  it("soma o recorte com realizado ÷ previsto", () => {
+    const r = resumirSelecao(buscarCodigos(lista, "pin pile"));
+    expect(r).toMatchObject({ codigos: 2, desenhos: 1, previsto: 150, realizado: 25, pendentes: 40, execPend: 2 });
+    expect(r.avanco).toBeCloseTo(25 / 150);
   });
 });

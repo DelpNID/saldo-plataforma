@@ -71,11 +71,13 @@ export function GraficoEvolucao({ pontos }: { pontos: PontoGrafico[] }) {
 
   const sel = ativo ?? ultimo;
   const ps = pontos[sel];
-  const esquerda = (x(sel) / L) * 100;
+  // O balão encosta na borda mais próxima para não sair do cartão no celular
+  const posX = x(sel) / L;
+  const balao = posX < 0.33 ? { left: x(sel), transform: "none" } : posX > 0.67 ? { right: L - x(sel), transform: "none" } : { left: x(sel) };
 
   return (
     <div className="g-grafico" ref={caixa}>
-      <div className="g-tooltip" role="status" style={{ left: `clamp(70px, ${esquerda}%, calc(100% - 70px))` }}>
+      <div className="g-tooltip" role="status" style={balao}>
         <b>{ps.data}</b> · {pctTxt(ps.avanco)}
         <small>
           {fmt0.format(ps.realizado)} de {fmt0.format(ps.previsto)} · {fmt0.format(ps.pendentes)} pendentes
