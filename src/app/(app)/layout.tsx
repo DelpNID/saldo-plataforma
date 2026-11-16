@@ -10,11 +10,11 @@ import { dadosDaMoldura } from "@/lib/moldura";
 export const dynamic = "force-dynamic";
 
 export default async function LayoutDoApp({ children }: { children: React.ReactNode }) {
-  const { projetos, pendentes, arquivo } = await dadosDaMoldura();
+  const { projetos, pendentes } = await dadosDaMoldura();
   // A barra recolhida sai certa já do servidor (sem o salto ao carregar).
   const barraRecolhida = recolhidaPeloCookie(cookies().get(COOKIE_BARRA)?.value);
   return (
-    <AppShell projetos={projetos} selos={{ "/pendencias": pendentes > 0 ? pendentes : undefined }} arquivo={arquivo} barraRecolhida={barraRecolhida}>
+    <AppShell projetos={projetos} selos={{ "/pendencias": pendentes > 0 ? pendentes : undefined }} barraRecolhida={barraRecolhida}>
       {children}
     </AppShell>
   );

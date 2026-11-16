@@ -108,6 +108,54 @@ export function LinhaFabric({ saldo, fabric, falta, pequena }: { saldo: number; 
 /** Quanto falta subir para o realizado alcançar a fabricação (para a LinhaFabric dos destaques). */
 export const faltaFabric = (fabric: number, previsto: number, realizado: number) => atrasoQtd({ realizado, esperado: fabric * previsto });
 
+/**
+ * A situação dos códigos numa barra só, dividida em Sem avanço, Em andamento e Concluída, com o número e a
+ * parte do total escritos embaixo (degraus 6, 4 e 2 da escala de vermelhos: não vizinhos; o 2 sempre com rótulo).
+ */
+export function FaixaSituacao({ semAvanco, andamento, concluidas }: { semAvanco: number; andamento: number; concluidas: number }) {
+  const total = semAvanco + andamento + concluidas;
+  const parte = (n: number) => (total > 0 ? n / total : 0);
+  const partes = [
+    { rotulo: "Sem avanço", n: semAvanco, cor: COR_ASCENT.semAvanco },
+    { rotulo: "Em andamento", n: andamento, cor: COR_ASCENT.andamento },
+    { rotulo: "Concluída", n: concluidas, cor: COR_ASCENT.concluida },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="flex h-2 overflow-hidden rounded-full bg-bg-3" role="presentation">
+        {partes
+          .filter((p) => p.n > 0)
+          .map((p) => (
+            <span key={p.rotulo} data-parte={p.rotulo} className="block h-full" style={{ width: largura(parte(p.n)), background: p.cor }} />
+          ))}
+      </span>
+      <ul className="flex flex-col gap-1 text-xs text-txt-2">
+        {partes.map((p) => (
+          <li key={p.rotulo} className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: p.cor }} aria-hidden="true" />
+            <span className="min-w-0 flex-1">{p.rotulo}</span>
+            <b className="font-mono font-bold text-txt">{num(p.n)}</b>
+            <span className="w-12 text-right font-mono">{pct(parte(p.n))}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** O que já foi feito de um total: a barra e "X <rótulo> · Y% do total". */
+export function FeitoDoTotal({ feito, total, rotulo, casas = 0 }: { feito: number; total: number; rotulo: string; casas?: number }) {
+  const parte = total > 0 ? feito / total : 0;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Barra valor={parte} cor={COR_ASCENT.avanco} />
+      <span className="text-xs text-txt-2">
+        <b className="font-mono font-bold text-txt">{num(feito, casas)}</b> {rotulo} · <span className="font-mono">{pct(parte)}</span> do total
+      </span>
+    </div>
+  );
+}
+
 /** Avanço do saldo de um código: %, "x de y" e a barra. Com o % de fabricação, ganha a barra e a linha da fabricação. */
 export function Avanco({ valor, rotulo, fabric }: { valor: number; rotulo?: string; fabric?: number | null }) {
   return (

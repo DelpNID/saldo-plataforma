@@ -5,8 +5,8 @@ de cada código de tarefa e consegue abrir as camadas até o componente pendente
 
 **Stack:** Next.js 14 · TypeScript · Tailwind CSS 3.4 · Prisma · PostgreSQL (Neon) · Vercel · GitHub
 
-**Visual:** o mesmo padrão do Visto (tokens, componentes e moldura copiados de `delp-visto@f66a6c3`), com tema claro e
-escuro. O que mudou em relação ao Visto está em [`docs/visto-desvios.md`](docs/visto-desvios.md).
+**Visual:** o mesmo padrão do Visto (tokens, componentes e moldura copiados de `delp-visto@f66a6c3`), só no tema
+claro. O que mudou em relação ao Visto está em [`docs/visto-desvios.md`](docs/visto-desvios.md).
 
 ## Rodar na máquina
 

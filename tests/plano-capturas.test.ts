@@ -5,15 +5,15 @@ const TELAS = ["gestao", "importar", "inexistente", "linhagem", "login", "painel
 
 describe("planoDeCapturas", () => {
   const plano = planoDeCapturas("1.18");
-  const base = plano.filter((c) => c.modo === "pagina" && !c.impressao && !c.armazenamento);
+  const base = plano.filter((c) => c.modo === "pagina" && !c.impressao && !c.armazenamento && c.tema === "claro");
 
-  it("fotografa as 9 telas inteiras em 1526 e 390, nos dois temas", () => {
-    expect(base).toHaveLength(36);
+  it("fotografa as 9 telas inteiras em 1526 e 390, só no tema claro (o Ascent não tem modo noturno)", () => {
+    expect(base).toHaveLength(18);
     expect([...new Set(base.map((c) => c.nome))].sort()).toEqual([...TELAS].sort());
   });
 
-  it("soma 51 capturas com as variantes de impressão, rolagem, tema salvo e barra recolhida", () => {
-    expect(plano).toHaveLength(51);
+  it("soma 33 capturas com as variantes de impressão, rolagem, sistema no escuro e barra recolhida", () => {
+    expect(plano).toHaveLength(33);
   });
 
   it("aponta cada tela para o caminho certo", () => {
@@ -48,21 +48,27 @@ describe("planoDeCapturas", () => {
     expect([...new Set(roladas.map((c) => c.nome))].sort()).toEqual(["linhagem", "painel", "pendencias", "retrabalho", "tarefa"]);
   });
 
-  it("testa o tema escuro salvo com o sistema claro, e a barra recolhida", () => {
-    const salvo = plano.filter((c) => c.armazenamento?.["ascent.tema"] === "escuro");
-    expect(salvo).toHaveLength(2);
-    for (const c of salvo) expect(c.tema).toBe("claro");
+  it("com o Windows no modo escuro só o Painel é fotografado, para provar que a tela continua clara", () => {
+    const escuro = plano.filter((c) => c.tema === "escuro");
+    expect(escuro.map((c) => [c.nome, c.largura])).toEqual([
+      ["painel", 1526],
+      ["painel", 390],
+    ]);
+    expect(plano.some((c) => c.armazenamento && "ascent.tema" in c.armazenamento)).toBe(false);
+  });
+
+  it("testa a barra recolhida", () => {
     const recolhida = plano.filter((c) => c.armazenamento?.["ascent.barra-recolhida"] === "1");
     expect(recolhida.map((c) => [c.nome, c.largura])).toEqual([["painel", 1526]]);
   });
 
   it("nomeia os arquivos sem repetir", () => {
     const arquivos = plano.map((c) => c.arquivo);
-    expect(arquivos).toContain("gestao-390-escuro.png");
-    expect(arquivos).toContain("tarefa-794-claro-impressao.png");
-    expect(arquivos).toContain("painel-390-claro-rolado.png");
-    expect(arquivos).toContain("painel-1526-claro-salvo-escuro.png");
-    expect(arquivos).toContain("painel-1526-claro-barra-recolhida.png");
+    expect(arquivos).toContain("gestao-390.png");
+    expect(arquivos).toContain("tarefa-794-impressao.png");
+    expect(arquivos).toContain("painel-390-rolado.png");
+    expect(arquivos).toContain("painel-1526-sistema-escuro.png");
+    expect(arquivos).toContain("painel-1526-barra-recolhida.png");
     expect(new Set(arquivos).size).toBe(plano.length);
   });
 

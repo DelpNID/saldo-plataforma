@@ -1,4 +1,4 @@
-// Conferência visual: fotografa todas as telas em desktop e celular, nos dois temas.
+// Conferência visual: fotografa todas as telas em desktop e celular, no tema claro (o único do Ascent).
 // Uso: com `npm run dev` rodando, `npm run capturas -- <etapa>`.
 // As fotos têm dado de projeto de cliente: vão para design/ascent-verificacao/<etapa>/,
 // que fica fora do git. Só leitura no banco.
@@ -41,13 +41,6 @@ async function conferirServidor(): Promise<void> {
   if (!/Saldo|Ascent/.test(nome)) sair(`${SERVIDOR} está servindo outro app ("${nome}"). Feche-o ou use ASCENT_URL.`);
 }
 
-/** O tema precisa estar no <head>, antes da primeira pintura (não se prova por foto). */
-async function temaNoHead(caminho: string, cookie?: string): Promise<boolean> {
-  const html = await (await fetch(`${SERVIDOR}${caminho}`, { headers: cookie ? { cookie } : {} })).text();
-  const head = html.slice(0, html.indexOf("</head>") + 1 || undefined);
-  return head.includes("ascent.tema");
-}
-
 async function main() {
   const etapa = process.argv[2];
   if (!etapa) sair("Informe a etapa. Ex.: npm run capturas -- 00-antes");
@@ -61,10 +54,6 @@ async function main() {
   const valor = await criarSessao(segredo, Date.now() - (DURACAO_S - 3600) * 1000);
   const cookie = { nome: COOKIE, valor };
   const plano = planoDeCapturas(await primeiraTarefa());
-  const head = {
-    login: await temaNoHead("/login"),
-    painel: await temaNoHead("/", `${COOKIE}=${valor}`),
-  };
 
   const edge = await abrirEdge();
   const linhas: { arquivo: string; erros: string[]; rolagem: boolean; contraste: string[] }[] = [];
@@ -97,7 +86,6 @@ async function main() {
     for (const t of l.contraste.slice(0, 5)) console.log(`    ↳ contraste: ${t}`);
   }
   const conta = (f: (l: (typeof linhas)[number]) => boolean) => linhas.filter(f).length;
-  console.log(`\nScript do tema no <head>: /login ${head.login ? "sim" : "NÃO"} · / ${head.painel ? "sim" : "NÃO"}`);
   console.log(
     `${linhas.length} capturas em ${pasta} · ${conta((l) => l.erros.length > 0)} com erro de console · ` +
       `${conta((l) => l.contraste.length > 0)} com texto abaixo do AA · ${conta((l) => l.rolagem)} com rolagem lateral`,

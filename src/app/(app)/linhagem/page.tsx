@@ -89,7 +89,6 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
     <div className="flex flex-col gap-3">
       {/* A trilha do topo nomeia a tela; o título fica para leitor de tela (regra do Visto). */}
       <h1 className="sr-only">Linhagem dos códigos de tarefa</h1>
-      <p className="text-sm text-txt-2">Projeto › desenho › código de tarefa › tarefas filhas. Clique num código para abrir o detalhamento.</p>
       <Linhagem
           desenhos={[...mapa.values()]}
           filhasPorCodigo={filhasPorCodigo}

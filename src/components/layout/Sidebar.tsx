@@ -3,10 +3,9 @@
 // Origem: delp-visto@f66a6c3 src/components/layout/Sidebar.tsx
 // Desvios: o menu é o do Ascent (GRUPOS_MENU e estaAtivo de src/lib/navegacao.ts),
 //   sem os grupos por papel nem as âncoras do módulo de terceiros do Visto (o Ascent
-//   tem uma senha de equipe, sem papéis); os selos chegam por prop do layout; o pé
-//   da barra tem a escolha completa do tema (SeletorTema), porque o Ascent não tem o
-//   menu da conta onde o Visto a guarda; next/navigation no lugar do React Router;
-//   some na impressão. Ver docs/visto-desvios.md.
+//   tem uma senha de equipe, sem papéis); os selos chegam por prop do layout; sem
+//   escolha de tema (o Ascent só tem o claro); next/navigation no lugar do React
+//   Router; some na impressão. Ver docs/visto-desvios.md.
 // -----------------------------------------------------------------------------
 // Sidebar.tsx — a barra lateral: fixa a partir de `shell:` (900px), gaveta abaixo.
 // 264px aberta, 72px recolhida (só o símbolo e os ícones).
@@ -20,7 +19,6 @@ import { ItemBarra } from './barra/ItemBarra';
 import { MarcaBarra } from './barra/MarcaBarra';
 import { RotuloSecao } from './barra/RotuloSecao';
 import { SeloNumero } from './barra/SeloNumero';
-import { SeletorTema } from './SeletorTema';
 
 /** O que cada item conta, para o leitor de tela (o número sozinho não diz o quê). */
 const ROTULO_DO_SELO: Record<string, (n: number) => string> = {
@@ -100,8 +98,6 @@ export function Sidebar({
           </div>
         ))}
       </nav>
-
-      <SeletorTema recolhida={recolhida} />
     </aside>
   );
 }

@@ -2,9 +2,9 @@
 
 // Origem: delp-visto@f66a6c3 src/components/layout/Topbar.tsx
 // Desvios: a trilha sai de trilhaDaRota (src/lib/navegacao.ts) em vez dos grupos
-//   por papel do Visto; a casinha diz "Ascent"; à direita, o seletor de projeto, o
-//   botão de tema e o Sair (o Ascent não tem sino nem menu da conta — senha de
-//   equipe); next/link e next/navigation; some na impressão. Ver docs/visto-desvios.md.
+//   por papel do Visto; a casinha diz "Ascent"; à direita, o seletor de projeto e o
+//   Sair (o Ascent não tem sino nem menu da conta — senha de equipe — nem troca de
+//   tema: só o claro); next/link e next/navigation; some na impressão. Ver docs/visto-desvios.md.
 import { ChevronRight, Home, LogOut, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,7 +12,6 @@ import type { RefObject } from 'react';
 import { trilhaDaRota } from '../../lib/navegacao';
 import { SeletorProjeto, type ProjetoOpcao } from '../SeletorProjeto';
 import { buttonVariants } from '../ui/Button';
-import { BotaoTema } from './BotaoTema';
 
 interface TopbarProps {
   onOpenMenu: () => void;
@@ -73,7 +72,6 @@ export function Topbar({ onOpenMenu, menuButtonRef, projetos }: TopbarProps) {
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {projetos.length > 0 && <SeletorProjeto atualId={projetos[0].id} opcoes={projetos} />}
-        <BotaoTema />
         <form action="/api/sair" method="post">
           <button type="submit" className={`${buttonVariants.ghost} !px-3 sm:!px-5`} aria-label="Sair">
             <LogOut size={16} aria-hidden="true" />
