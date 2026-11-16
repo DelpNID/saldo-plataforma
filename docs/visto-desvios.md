@@ -19,6 +19,16 @@ Nada aqui foi aplicado no Visto.
 | `src/components/layout/Painel.tsx` | `acao.href` (vira `next/link`); `apoio` aceita conteúdo; link da ação com 44px | O `onClick` não passa de página de servidor para o navegador; a nota de Retrabalho tem link; alvo de toque. |
 | `src/components/ui/TileIndicador.tsx` | `children` (conteúdo abaixo do valor); `variacaoTexto` (variação já escrita); variação "boa" em `text-success-forte` | O Ascent mostra a barra Saldo × Fabricação, links e "desde ontem" / "em 7 dias", que não são série mensal; o `--success` puro dá ~3:1 em texto de 12px (abaixo do AA). |
 | `"use client"` em `Card`, `Painel`, `TileIndicador`, `Segmentado` e `folha.ts` | Diretiva do Next | `createContext`/`useContext`, hooks e eventos só rodam em componente de cliente no App Router. O Visto é SPA e não precisa. |
+| `src/lib/tema.ts` | Chave `ascent.tema`; `CHAVE_TEMA` importada de `tema-script.ts`; `useTema`/`useTemaEfetivo` começam em `'sistema'`/`'claro'` e leem o valor no efeito | O layout raiz é de servidor e não pode importar módulo com hooks; o estado inicial lido do navegador quebraria a hidratação (a primeira pintura já sai certa pelo script do `<head>`). |
+| `src/lib/tema-script.ts` (= o `<script>` do `index.html`) | Vira uma string exportada, posta no `<head>` pelo `layout.tsx` | No Next não há `index.html`. |
+| `src/lib/barra-recolhida.ts` | Chave `ascent.barra-recolhida`; começa aberta e lê no efeito | Mesmo motivo do tema. Quem recolheu a barra a vê abrir e fechar uma vez ao carregar. |
+| `src/components/layout/Sidebar.tsx`, `Topbar.tsx`, `AppShell.tsx` | Mesmo markup e classes; sem papéis, âncoras, sino, menu da conta nem saída por inatividade; menu e trilha de `src/lib/navegacao.ts`; dados do topo por prop do layout; `print:hidden` e `print:!pl-0` | O Ascent tem uma senha de equipe, sem papéis. O conteúdo vem por `children` (App Router). |
+| `src/components/layout/AppShell.tsx` | Rodapé "Delp · Divulgação interna · Fonte" em `text-txt-2` | O `--muted` dá ~4,2:1 sobre o `--bg-2` (abaixo do AA). |
+| `src/components/layout/barra/ItemBarra.tsx` | `next/link` com `aria-current` no lugar do `NavLink` | Não há React Router. |
+| `src/components/layout/barra/MarcaBarra.tsx` | Marca Ascent e "Subida de saldo"; lockup com 132px | A arte do Ascent é mais larga (4:1); a mesma altura de letra do Visto pede 132px. |
+| `src/components/layout/barra/SeloNumero.tsx` (= `SeloNumero` de `SeloConversas.tsx`) | Fundo `bg-grad-delp` | No escuro o `--delp-red` clareia e o branco por cima cai para ~3:1. |
+| `src/components/layout/SeletorTema.tsx` (do grupo "Tema" de `ContaNoCabecalho.tsx`) | Mora no pé da barra; opção ativa em `bg-grad-delp`; 44px | O Ascent não tem menu da conta; mesmo motivo de contraste do selo. |
+| `src/components/layout/BotaoTema.tsx` | Arquivo próprio | No Visto ele mora dentro de `ContaNoCabecalho.tsx`. |
 
 ## Peças do Visto que não vieram
 

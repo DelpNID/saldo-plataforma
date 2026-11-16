@@ -1,32 +1,52 @@
+import { clsx } from "clsx";
 import { ROTULO_SALDO, ROTULO_SITUACAO, rotuloMaterial, situacaoTarefa, type SituacaoTarefa, type StatusSaldo } from "@/lib/regras";
 import { num, pct } from "@/lib/formato";
 import { atrasoQtd, ritmoSaldo } from "@/lib/kpis";
+import { COR_ASCENT, SELO_TOM, TOM_DA_CLASSE } from "@/lib/cores";
+import { Badge } from "./ui/Badge";
 
-const CLASSE_SALDO: Record<StatusSaldo, string> = { ok: "ok", parcial: "parcial", "sem-saldo": "pend", "sem-dado": "neutro" };
-const CLASSE_SITUACAO: Record<SituacaoTarefa, string> = { concluida: "ok", andamento: "parcial", "sem-avanco": "pend" };
+// Situação: o Badge do Visto (texto + ponto colorido; a cor nunca anda sozinha).
+// Barras: a escala de vermelhos (src/lib/cores.ts), sempre com nome e % escritos.
+//
+// As classes antigas (avanco, avanco-cmp, cmp, cmp-c, cmp-l, cmp-n, cmp-v, barra,
+// ritmo) ficam no markup só como GANCHOS: dentro de .legado (telas ainda não
+// migradas) as regras antigas de contexto posicionam a barra; fora dele não fazem
+// nada. Saem na limpeza final, junto com o legado.css.
+
+const CLASSE_SALDO: Record<StatusSaldo, keyof typeof TOM_DA_CLASSE> = { ok: "ok", parcial: "parcial", "sem-saldo": "pend", "sem-dado": "neutro" };
+const CLASSE_SITUACAO: Record<SituacaoTarefa, keyof typeof TOM_DA_CLASSE> = { concluida: "ok", andamento: "parcial", "sem-avanco": "pend" };
 
 /** Situação do código de tarefa pelo avanço do saldo (mesma regra das contagens do Painel). */
 export function EtiquetaSituacao({ avanco }: { avanco: number }) {
   const s = situacaoTarefa(avanco);
-  return <span className={`tag ${CLASSE_SITUACAO[s]}`}>{ROTULO_SITUACAO[s]}</span>;
+  return <Badge tone={TOM_DA_CLASSE[CLASSE_SITUACAO[s]]}>{ROTULO_SITUACAO[s]}</Badge>;
 }
 
 export function EtiquetaSaldo({ status }: { status: StatusSaldo }) {
-  return <span className={`tag ${CLASSE_SALDO[status]}`}>{ROTULO_SALDO[status]}</span>;
+  return <Badge tone={TOM_DA_CLASSE[CLASSE_SALDO[status]]}>{ROTULO_SALDO[status]}</Badge>;
 }
 
 /** Material: todas as linhas apontadas, nenhuma, ou parte delas (quando a peça aparece em mais de uma OP). */
 export function EtiquetaMaterial({ pendentes, linhas, prefixo }: { pendentes: number; linhas: number; prefixo?: string }) {
   const r = rotuloMaterial(pendentes, linhas);
   return (
-    <span className={`tag ${r.classe}`}>
+    <Badge tone={TOM_DA_CLASSE[r.classe]}>
       {prefixo ? `${prefixo} ` : ""}
       {r.texto}
-    </span>
+    </Badge>
   );
 }
 
 const largura = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
+
+/** A trilha e o preenchimento de uma barra de avanço, na cor de gráfico pedida. */
+export function Barra({ valor, cor, className }: { valor: number; cor: string; className?: string }) {
+  return (
+    <span className={clsx("barra block h-2 overflow-hidden rounded-full bg-bg-3", className)} role="presentation">
+      <span className="block h-full rounded-full" style={{ width: largura(valor), background: cor }} />
+    </span>
+  );
+}
 
 /** Atraso, acompanha ou à frente: escrito por extenso, a cor só reforça. */
 export function TextoRitmo({ saldo, fabric, falta, curto }: { saldo: number; fabric: number; falta?: number; curto?: boolean }) {
@@ -37,12 +57,17 @@ export function TextoRitmo({ saldo, fabric, falta, curto }: { saldo: number; fab
     if (!curto && falta !== undefined && falta > 0) texto += ` · faltam ${num(falta, 1)} para acompanhar a fabricação`;
   } else if (ritmo === "a-frente") texto = curto ? `▲ ${num(pp, 1)} p.p. à frente` : `▲ Saldo ${num(pp, 1)} p.p. à frente da fabricação`;
   else texto = curto ? "= Acompanha" : "= Saldo acompanha a fabricação";
-  return <span className={`ritmo ritmo-${ritmo}`}>{texto}</span>;
+  return (
+    <span className={clsx("ritmo font-semibold", curto ? "text-xs" : "text-sm", ritmo === "atraso" ? SELO_TOM.danger : SELO_TOM.success)}>
+      {texto}
+    </span>
+  );
 }
 
 /**
  * Saldo × Fabricação: duas barras, cada uma com o nome e o % escritos.
  * Fabricação = % AVANÇO FABRIC (guias com 100%): o saldo que já deveria ter subido.
+ * Saldo no degrau 5 e Fabricação no 3 da escala de vermelhos (degraus não vizinhos).
  */
 export function Comparacao({
   saldo,
@@ -58,22 +83,23 @@ export function Comparacao({
   compacto?: boolean;
 }) {
   const falta = previsto !== undefined && realizado !== undefined ? atrasoQtd({ realizado, esperado: fabric * previsto }) : undefined;
+  const linha = (nome: string, valor: number, cor: string, classe: string) => (
+    <span
+      className={clsx(
+        "cmp-l grid min-w-0 items-center",
+        classe,
+        compacto ? "grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-px" : "grid-cols-[84px_minmax(0,1fr)_56px] gap-x-2.5",
+      )}
+    >
+      <span className={clsx("cmp-n font-semibold text-txt-2", compacto ? "col-start-1 row-start-1 text-xs" : "text-[13px]")}>{nome}</span>
+      <Barra valor={valor} cor={cor} className={compacto ? "col-span-2 row-start-2 h-[7px]" : "h-2.5"} />
+      <b className={clsx("cmp-v text-right font-mono font-bold text-txt", compacto ? "col-start-2 row-start-1 text-sm" : "text-[15px]")}>{pct(valor)}</b>
+    </span>
+  );
   return (
-    <div className={compacto ? "cmp cmp-c" : "cmp"}>
-      <span className="cmp-l cmp-saldo">
-        <span className="cmp-n">Saldo</span>
-        <span className="barra" role="presentation">
-          <span style={{ width: largura(saldo) }} />
-        </span>
-        <b className="cmp-v">{pct(saldo)}</b>
-      </span>
-      <span className="cmp-l cmp-fab">
-        <span className="cmp-n">Fabricação</span>
-        <span className="barra" role="presentation">
-          <span style={{ width: largura(fabric) }} />
-        </span>
-        <b className="cmp-v">{pct(fabric)}</b>
-      </span>
+    <div className={clsx("flex min-w-0 flex-col", compacto ? "cmp cmp-c gap-1" : "cmp gap-1.5")}>
+      {linha("Saldo", saldo, COR_ASCENT.saldo, "cmp-saldo")}
+      {linha("Fabricação", fabric, COR_ASCENT.fabricacao, "cmp-fab")}
       <TextoRitmo saldo={saldo} fabric={fabric} falta={falta} curto={compacto} />
     </div>
   );
@@ -83,19 +109,17 @@ export function Comparacao({
 export function Avanco({ valor, rotulo, fabric }: { valor: number; rotulo?: string; fabric?: number | null }) {
   if (fabric !== undefined && fabric !== null) {
     return (
-      <div className="avanco avanco-cmp">
+      <div className="avanco avanco-cmp flex min-w-0 flex-col gap-1">
         <Comparacao compacto saldo={valor} fabric={fabric} />
-        {rotulo && <small>{rotulo}</small>}
+        {rotulo && <small className="font-mono text-xs text-txt-2">{rotulo}</small>}
       </div>
     );
   }
   return (
-    <div className="avanco">
-      <b>{pct(valor)}</b>
-      {rotulo ? <small>{rotulo}</small> : <span />}
-      <span className="barra" role="presentation">
-        <span className={valor >= 0.9999 ? "concluida" : undefined} style={{ width: largura(valor) }} />
-      </span>
+    <div className="avanco grid min-w-0 grid-cols-[auto_1fr] items-baseline gap-x-2.5 gap-y-1">
+      <b className="font-mono text-[17px] font-bold text-txt">{pct(valor)}</b>
+      {rotulo ? <small className="font-mono text-xs text-txt-2">{rotulo}</small> : <span />}
+      <Barra valor={valor} cor={COR_ASCENT.avanco} className="col-span-2" />
     </div>
   );
 }
