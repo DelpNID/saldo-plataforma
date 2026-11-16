@@ -44,14 +44,14 @@ Projeto → código de tarefa → tarefas filhas → estruturas (OPs) → compon
 Decisão de 16/11/2026 (design `docs/superpowers/specs/2026-11-16-ascent-padrao-visto-design.md`): o Ascent segue o mesmo padrão
 das aplicações do NID copiando o **código** da camada de design do Visto (`C:\dev\gg-digital\delp-visto`, commit `f66a6c3`).
 - **Cópias**: `tailwind.config.js`, tokens de `src/app/globals.css` (= `src/index.css` do Visto), `src/components/ui/`,
-  `src/components/layout/` (moldura: `AppShell`, `Sidebar`, `Topbar`, `barra/*`), `src/lib/tema.ts`, `barra-recolhida.ts`,
+  `src/components/layout/` (moldura: `AppShell`, `Sidebar`, `Topbar`, `barra/*`), `barra-recolhida.ts`,
   `indicador-tendencia.ts`, `use-largura-elemento.ts`. Cada arquivo copiado abre com `Origem: delp-visto@f66a6c3 <caminho>`;
   **todo desvio vai para `docs/visto-desvios.md`**. Para atualizar uma peça, compare com o Visto e mantenha os desvios.
-- **Tokens, nunca hex solto nem classe fixa** (`bg-white`, `text-green-700`): cores são triplas RGB em `:root` e
-  `:root[data-tema='escuro']`. Exceções declaradas: metadados (`layout.tsx`, `manifest.ts`) e a arte do Login.
-- **Tema** claro/escuro/automático: `src/lib/tema.ts` (chave `ascent.tema`), script no `<head>` (`src/lib/tema-script.ts`),
-  botão no topo e escolha completa no pé da barra lateral. Arte da marca troca por CSS (`.so-tema-claro/.so-tema-escuro`).
-  O **Login é sempre claro**: `data-tema="claro"` num elemento prende aquele trecho no claro (tokens e arte da marca).
+- **Tokens, nunca hex solto nem classe fixa** (`bg-white`, `text-green-700`): cores são triplas RGB em `:root`.
+  Exceções declaradas: metadados (`layout.tsx`, `manifest.ts`) e a arte do Login.
+- **Só o tema claro** (decisão de 16/11/2026): sem modo noturno, sem botão de tema e sem script de tema no `<head>`.
+  `tests/tema-unico.test.ts` falha se alguma peça de troca de tema voltar. A logo negativa (`LogoAscent tom="claro"`)
+  só aparece sobre a cena escura do Login.
 - **Cor de gráfico** só de `src/lib/cores.ts` (`ESCALA_VERMELHOS`, `COR_ASCENT`), por `style`: uma escala de vermelhos,
   degraus vizinhos nunca no mesmo gráfico, degraus 1–2 só com rótulo escrito. Situação = `Badge` (texto + ponto), ritmo = `SELO_TOM`.
 - **Réguas**: bloco `Painel`; faixa de indicadores `.grade-indicadores` com `TileIndicador`; rótulo e cabeçalho de tabela em

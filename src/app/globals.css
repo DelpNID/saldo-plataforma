@@ -1,6 +1,6 @@
 /* Origem: delp-visto@f66a6c3 src/index.css
    Desvios: saem os tokens sem uso no Ascent (--mesa-*, --marca-fundo, --tinta*);
-   entram no fim as duas regras que trocam a arte da marca por tema (.so-tema-*).
+   sai o MODO NOTURNO: o Ascent tem só o tema claro (decisão de 16/11/2026).
    Ver docs/visto-desvios.md.
    ----------------------------------------------------------------------------
    index.css — estilos globais e tokens de design DELP
@@ -18,15 +18,12 @@
    noturno): o tailwind.config as consome como `rgb(var(--x) / <alpha-value>)`,
    e é isso que mantém `bg-delp-red/10` e `border-subtle` funcionando enquanto
    o valor muda com o tema. Trocar o tema é redefinir estas linhas — nenhuma
-   tela precisa saber que existe tema.
-   Ascent: `[data-tema='claro']` num elemento PRENDE aquele trecho no claro,
-   qualquer que seja o tema escolhido — é como o Login fica sempre claro. */
-:root,
-[data-tema='claro'] {
+   tela precisa saber que existe tema. (O Ascent só tem o claro.) */
+:root {
   /* Sem esta linha os controles NATIVOS — popup do <select>, calendário do
      input type="date", listbox — seguem o tema do SISTEMA: em Windows no modo
-     escuro eles apareciam escuros dentro de telas brancas (30/07/2026). Agora
-     ela acompanha o tema escolhido, em vez de ser fixa. */
+     escuro eles apareciam escuros dentro de telas brancas (30/07/2026). No
+     Ascent ela fica fixa no claro, porque não há modo noturno. */
   color-scheme: light;
 
   /* Marca — #CC0F10 é o Delp Red oficial do padrão visual Delp. */
@@ -69,8 +66,7 @@
   --unidade-mooring: 33 61 117;
   /* A ESCALA DOS GRÁFICOS (ESCALA_VERMELHOS): 1 o mais leve, 6 o mais grave.
      Uma matiz só, em todas as visões, desde 22/09/2026 — a régua de qual
-     degrau cabe onde está em src/lib/cores.ts. Ela INVERTE no modo
-     noturno: sobre grafite, mais grave é mais LUZ. */
+     degrau cabe onde está em src/lib/cores.ts. */
   --vermelho-1: 242 196 196;
   --vermelho-2: 227 152 152;
   --vermelho-3: 212 106 106;
@@ -79,65 +75,8 @@
   --vermelho-6: 139 0 0;
   /* A grade dos gráficos e o corte entre as fatias do anel. */
   --grade: 237 237 237;
-  /* A marca d'água da faixa do Perfil. Vive aqui porque o mesmo valor pesa
-     diferente nos dois temas: cor clara sobre fundo escuro contrasta mais. */
+  /* A marca d'água da faixa do Perfil. */
   --marca-agua: .055;
-}
-
-/* MODO NOTURNO (17/09/2026, pedido do Lucas). O atributo entra no <html> por
-   src/lib/tema.ts; `sistema` vira claro ou escuro antes da primeira pintura.
-   Dois cuidados que não são gosto:
-
-   - A ESCALA se inverte, a semântica não: `bg` continua sendo a superfície e
-     `bg-2` o fundo da página — no escuro o cartão é mais CLARO que o fundo,
-     que é como o olho lê profundidade sem sombra.
-   - O vermelho CLAREIA. #CC0F10 sobre #121212 dá 3,4:1, abaixo do AA para
-     texto; o mesmo vermelho com mais luz passa, e é a prática do padrão em
-     tema escuro (cor saturada escura sobre fundo escuro some). Preenchimento
-     de botão continua com o vermelho da marca. */
-:root[data-tema='escuro'] {
-  color-scheme: dark;
-
-  --delp-red: 255 92 93;
-  --delp-red-dark: 214 47 50;
-  --delp-red-deep: 160 13 36;
-
-  --bg: 30 30 30;
-  --bg-2: 18 18 18;
-  --bg-3: 44 44 44;
-  --border-med: 82 82 82;
-  --border-subtle: 255 255 255;
-  --border-subtle-a: .12;
-
-  --txt: 232 232 232;
-  --txt-2: 181 181 181;
-  --muted: 150 150 150; /* passa AA (4,6:1) sobre o #1E1E1E do cartão */
-
-  --success: 74 206 118;
-  --success-forte: 74 206 118;
-  --success-forte-texto: 12 42 22;
-  --info: 106 152 240;
-  --warning: 226 183 43;
-  --warning-forte: 255 154 92;
-  --warning-texto: 226 183 43;
-  --danger: 255 92 93;
-
-  --unidade-subsea: 106 152 240;
-  --unidade-industria: 255 145 73;
-  --unidade-servicos: 77 190 95;
-  --unidade-mooring: 122 149 214;
-
-  /* A escala INVERTE a luminosidade: sobre grafite, quem tem mais gravidade
-     é quem tem mais LUZ. A ordem 1→6 continua querendo dizer a mesma coisa,
-     e é isso que preserva as legendas nos dois temas. */
-  --vermelho-1: 112 42 44;
-  --vermelho-2: 150 52 54;
-  --vermelho-3: 190 66 68;
-  --vermelho-4: 226 86 88;
-  --vermelho-5: 255 112 113;
-  --vermelho-6: 255 150 150;
-  --grade: 58 58 58;
-  --marca-agua: .03;
 }
 
 /* Base tipográfica do app: Barlow (padrão visual Delp) sobre o cinza-claro
@@ -274,16 +213,4 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px rgb(var(--bg-2)) inset;
   box-shadow: 0 0 0 1000px rgb(var(--bg-2)) inset;
   transition: background-color 9999s ease-in-out 0s;
-}
-
-/* Ascent: a arte da marca existe nas duas versões no HTML e o tema escolhe qual
-   aparece (LogoAscent). Trocar o `src` em JS faria a renderização do servidor
-   discordar da do navegador quando o tema salvo é o escuro.
-   Dentro de um trecho preso no claro ([data-tema='claro'], o Login) vale a arte do claro. */
-:root[data-tema='escuro'] .so-tema-claro:not([data-tema='claro'] *) {
-  display: none;
-}
-:root:not([data-tema='escuro']) .so-tema-escuro,
-[data-tema='claro'] .so-tema-escuro {
-  display: none;
 }

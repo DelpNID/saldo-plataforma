@@ -1,4 +1,5 @@
-// Quais telas a conferência visual fotografa, em quais larguras, temas e modos.
+// Quais telas a conferência visual fotografa, em quais larguras e modos. O Ascent só tem o tema
+// claro; uma variante abre o Painel com o Windows no escuro para provar que a tela continua clara.
 // Módulo puro: o CLI (capturar-telas.ts) e o teste leem a mesma lista.
 
 export type Largura = 1526 | 390 | 794;
@@ -10,19 +11,18 @@ export interface Captura {
   nome: string;
   caminho: string;
   largura: Largura;
-  /** Tema do SISTEMA emulado (prefers-color-scheme). */
+  /** Tema do SISTEMA (Windows/celular) emulado (prefers-color-scheme). A tela é sempre clara. */
   tema: TemaCaptura;
   logado: boolean;
   impressao: boolean;
   modo: Modo;
-  /** localStorage gravado antes de a página abrir (tema salvo, barra recolhida). */
+  /** localStorage gravado antes de a página abrir (barra recolhida). */
   armazenamento?: Record<string, string>;
   arquivo: string;
 }
 
 /** 1526: a largura de referência do Visto (desktop com a barra aberta). 390: celular. 794: folha A4 a 96 dpi. */
 const LARGURAS: Largura[] = [1526, 390];
-const TEMAS: TemaCaptura[] = ["claro", "escuro"];
 const COM_IMPRESSAO = ["pendencias", "tarefa"];
 const COM_BLOCO_PARADO = ["painel", "linhagem", "pendencias", "tarefa", "retrabalho"];
 
@@ -58,13 +58,13 @@ export function planoDeCapturas(tarefa: string): Captura[] {
       impressao: extra.impressao ?? false,
       modo: extra.modo ?? "pagina",
       armazenamento: extra.armazenamento,
-      arquivo: `${nome}-${largura}-${tema}${extra.sufixo ?? ""}.png`,
+      arquivo: `${nome}-${largura}${extra.sufixo ?? ""}.png`,
     });
 
-  for (const { nome } of telas(tarefa)) for (const largura of LARGURAS) for (const tema of TEMAS) add(nome, largura, tema);
+  for (const { nome } of telas(tarefa)) for (const largura of LARGURAS) add(nome, largura, "claro");
   for (const nome of COM_IMPRESSAO) add(nome, 794, "claro", { impressao: true, sufixo: "-impressao" });
   for (const nome of COM_BLOCO_PARADO) for (const largura of LARGURAS) add(nome, largura, "claro", { modo: "rolado", sufixo: "-rolado" });
-  for (const largura of LARGURAS) add("painel", largura, "claro", { armazenamento: { "ascent.tema": "escuro" }, sufixo: "-salvo-escuro" });
+  for (const largura of LARGURAS) add("painel", largura, "escuro", { sufixo: "-sistema-escuro" });
   add("painel", 1526, "claro", { armazenamento: { "ascent.barra-recolhida": "1" }, sufixo: "-barra-recolhida" });
   return plano;
 }

@@ -97,7 +97,7 @@ export function SeletorProjeto({ atualId, opcoes }: { atualId: number; opcoes: P
               role="option"
               aria-selected={o.id === atual.id}
               onClick={() => setAberto(false)}
-              className="grid min-h-11 grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 rounded-btn border-l-4 border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:bg-bg-2 aria-selected:border-delp-red aria-selected:bg-bg-2"
+              className="grid min-h-11 grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 rounded-btn px-3 py-2.5 text-left text-sm transition-colors hover:bg-bg-2 aria-selected:bg-bg-2"
             >
               <b className="font-semibold text-txt">{o.nome}</b>
               <span className="font-mono text-lg font-bold text-txt">{o.avanco}</span>
