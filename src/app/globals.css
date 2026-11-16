@@ -528,34 +528,20 @@ a.filtro-ativo:hover{color:var(--delp-branco);background:var(--delp-vermelho);bo
 /* ===== 8. Saldo × Fabricação e situação da RA (16/11) =====
    Saldo = azul Subsea, Fabricação = azul Mooring (paleta Delp; ΔE 17,5 para daltônicos).
    Nome e % sempre escritos ao lado de cada barra: a cor nunca fica sozinha. */
-.cmp{display:flex;flex-direction:column;gap:6px;min-width:0}
-/* Cada série numa linha: nome | barra | % (no compacto: nome e % em cima, barra embaixo) */
-.cmp .cmp-l{display:grid;grid-template-columns:84px minmax(0,1fr) 56px;grid-template-areas:"n b v";align-items:center;gap:0 10px;min-width:0}
-.cmp .cmp-l .cmp-n{grid-area:n}
-.cmp .cmp-l .barra{grid-area:b;height:10px}
-.cmp .cmp-l .cmp-v{grid-area:v}
-.cmp-fab .barra>span{background:var(--delp-serie-fabric)}
-.cmp-n{font-size:13px;font-weight:600;color:var(--delp-texto-apoio)}
-.cmp-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.ritmo{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+/* Barra da fabricação logo embaixo da barra do saldo, e a linha "■ Fabricação X% · ▼ Atraso" */
+.barra-fab>span,.barra-fab>span.concluida{background:var(--delp-serie-fabric)}
+.stat .barra-fab,.g-hero .barra-fab,.g-busca-res .barra-fab{margin-top:-1px}
+.fab-linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px;font-size:14px;color:var(--delp-texto-apoio);font-variant-numeric:tabular-nums}
+.fab-linha b{color:var(--delp-preto)}
+.leg-fab{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--delp-serie-fabric);vertical-align:-1px}
+.ritmo{font-weight:600;font-variant-numeric:tabular-nums}
 .ritmo-atraso{color:var(--delp-vermelho)}
 .ritmo-em-dia,.ritmo-a-frente{color:var(--delp-ok)}
-.cmp-c{gap:3px}
-.cmp-c .cmp-l{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n v" "b b";gap:1px 8px}
-.cmp-c .cmp-l .barra{height:7px}
-.cmp-c .cmp-n{font-size:12px}
-.cmp-c .cmp-v{font-size:14px}
-.cmp-c .ritmo{font-size:12.5px}
-.avanco-cmp{display:flex;flex-direction:column;gap:3px}
-.avanco-cmp small{font-size:13px}
+.avanco .fab-linha,.g-linhas li .fab-linha{grid-column:1/-1}
+.avanco .fab-linha{font-size:13px}
 .cab-duplo{display:flex;align-items:center;gap:6px;color:var(--delp-texto-apoio)}
-.lin-cod{grid-template-columns:minmax(0,1fr) auto minmax(180px,220px) 12px}
 .stat-ra{display:flex;flex-direction:column;gap:1px;margin-top:4px;padding-top:6px;border-top:1px solid var(--delp-linha-suave);font-size:var(--delp-texto-apoio-tam);font-variant-numeric:tabular-nums}
 .stat-ra small{font-size:13px;color:var(--delp-texto-apoio)}
 .item-ra{display:inline-block;font-size:13px;font-weight:600;color:var(--delp-texto-apoio)}
 .item-ra-pend{color:var(--delp-vermelho)}
 td .item-ra{display:block;margin-top:2px}
-@media (max-width:699px){
-  .lin-cod{grid-template-columns:minmax(0,1fr) auto 12px}
-  .lin-cod .avanco{grid-column:1/-1;grid-row:2}
-}

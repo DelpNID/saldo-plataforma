@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Copiar, type Celula } from "@/components/Acoes";
 import { CabecalhoArvore, NoEstrutura, OpsDaEstrutura, chaveCorte, type Cortes } from "@/components/Arvore";
 import { ControlesTarefa, TrocaCodigo } from "@/components/ControlesTarefa";
-import { Avanco, Comparacao, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
+import { Avanco, BarrasSaldo, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
 import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { avancoDe } from "@/lib/kpis";
@@ -225,15 +225,10 @@ export default async function TarefaPage({ params, searchParams }: Props) {
         <section aria-label="Resumo do código de tarefa">
           <div className="stats">
             <div className="stat destaque">
-              <span className="stat-l">{fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"}</span>
+              <span className="stat-l">Avanço do saldo</span>
               <span className="stat-v">{pct(avanco)}</span>
-              {fabric !== null ? (
-                <Comparacao saldo={avanco} fabric={fabric} previsto={previsto} realizado={realizado} />
-              ) : (
-                <span className="barra" role="presentation">
-                  <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
-                </span>
-              )}
+              <BarrasSaldo saldo={avanco} fabric={fabric} />
+              {fabric !== null && <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, previsto, realizado)} />}
               <span className="stat-d">
                 {num(realizado, 1)} de {num(previsto, 1)} previsto
               </span>

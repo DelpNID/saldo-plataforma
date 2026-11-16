@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
-import { Comparacao, EtiquetaSituacao, TextoRitmo } from "@/components/Etiquetas";
+import { BarrasSaldo, EtiquetaSituacao, LinhaFabric, TextoRitmo, faltaFabric } from "@/components/Etiquetas";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { dataCurta, num, pct, quando } from "@/lib/formato";
 import { atrasoQtd, avancoDe, fabricDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
@@ -25,14 +25,6 @@ function Variacao({ valor, unidade, melhorSeSobe, desde }: { valor: number | nul
     <span className={`g-delta ${bom ? "g-bom" : "g-ruim"}`}>
       {sobe ? "▲" : "▼"} {sobe ? "+" : "−"}
       {texto} desde {desde}
-    </span>
-  );
-}
-
-function Barra({ valor }: { valor: number }) {
-  return (
-    <span className="barra" role="presentation">
-      <span className={valor >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.max(0, Math.min(1, valor)) * 100}%` }} />
     </span>
   );
 }
@@ -174,18 +166,13 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
             .sort((a, b) => compararCodigo(a.cod, b.cod))}
         />
         <section className="card g-hero" aria-label="Avanço do saldo">
-          <span className="stat-l">
-            {fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"} · {carga.projeto}
-          </span>
+          <span className="stat-l">Avanço do saldo · {carga.projeto}</span>
           <div className="g-hero-v">
             <b>{pct(avanco)}</b>
             <Variacao valor={ontem ? (avanco - avancoDe(ontem)) * 100 : null} unidade="pp" melhorSeSobe desde={ontem && dataCurta(ontem.dataRef).slice(0, 5)} />
           </div>
-          {fabric !== null ? (
-            <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
-          ) : (
-            <Barra valor={avanco} />
-          )}
+          <BarrasSaldo saldo={avanco} fabric={fabric} />
+          {fabric !== null && <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado)} />}
           <span className="stat-d">
             {num(atual.realizado, 1)} de {num(atual.previsto, 1)} previsto · faltam {num(Math.max(0, atual.previsto - atual.realizado), 1)}
           </span>
@@ -283,7 +270,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           </section>
 
           <section className="card g-bloco" aria-labelledby="g-grupos">
-            <h2 id="g-grupos">{fabric !== null ? "Saldo × fabricação por grupo de código" : "Avanço por grupo de código"}</h2>
+            <h2 id="g-grupos">Avanço por grupo de código</h2>
             <ul className="g-linhas">
               {porGrupo.map(([g, v]) => (
                 <li key={g}>
@@ -292,7 +279,8 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                   <span className="g-pct">
                     {num(v.realizado, 1)} de {num(v.previsto, 1)} · {num(v.codigos)} códigos
                   </span>
-                  {fabric !== null ? <Comparacao compacto saldo={avancoDe(v)} fabric={fabricDe(v)} /> : <Barra valor={avancoDe(v)} />}
+                  <BarrasSaldo saldo={avancoDe(v)} fabric={fabric !== null && v.previsto > 0 ? fabricDe(v) : null} />
+                  {fabric !== null && v.previsto > 0 && <LinhaFabric saldo={avancoDe(v)} fabric={fabricDe(v)} />}
                 </li>
               ))}
             </ul>

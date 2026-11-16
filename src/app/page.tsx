@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Rodape, Topo } from "@/components/Topo";
-import { Comparacao } from "@/components/Etiquetas";
+import { BarrasSaldo, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
 import { ListaTarefas, type TarefaResumo } from "@/components/ListaTarefas";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num, pct } from "@/lib/formato";
@@ -74,15 +74,10 @@ export default async function Painel() {
         <section aria-label="Resumo do projeto">
           <div className="stats">
             <div className="stat destaque">
-              <span className="stat-l">{carga.comFabric ? "Avanço do saldo × fabricação" : "Avanço do saldo"}</span>
+              <span className="stat-l">Avanço do saldo</span>
               <span className="stat-v">{pct(avanco)}</span>
-              {carga.comFabric ? (
-                <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
-              ) : (
-                <span className="barra" role="presentation">
-                  <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
-                </span>
-              )}
+              <BarrasSaldo saldo={avanco} fabric={carga.comFabric ? fabric : null} />
+              {carga.comFabric && <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado)} />}
               <span className="stat-d">
                 {num(carga.totalRealizado, 1)} de {num(carga.totalPrevisto, 1)} previsto
               </span>

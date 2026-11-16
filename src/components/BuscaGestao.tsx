@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Comparacao, EtiquetaSituacao } from "./Etiquetas";
+import { BarrasSaldo, EtiquetaSituacao, LinhaFabric, faltaFabric } from "./Etiquetas";
 import { num, pct } from "@/lib/formato";
 import { buscarCodigos, resumirSelecao, type CodigoBusca } from "@/lib/kpis";
 
@@ -46,13 +46,8 @@ export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codi
               {num(r.codigos)} {r.codigos === 1 ? "código de tarefa" : "códigos de tarefa"} · {num(r.desenhos)} {r.desenhos === 1 ? "desenho" : "desenhos"}
             </span>
           </div>
-          {comFabric ? (
-            <Comparacao saldo={r.avanco} fabric={r.fabric} previsto={r.previsto} realizado={r.realizado} />
-          ) : (
-            <span className="barra" role="presentation">
-              <span className={r.avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, r.avanco) * 100}%` }} />
-            </span>
-          )}
+          <BarrasSaldo saldo={r.avanco} fabric={comFabric ? r.fabric : null} />
+          {comFabric && <LinhaFabric saldo={r.avanco} fabric={r.fabric} falta={faltaFabric(r.fabric, r.previsto, r.realizado)} />}
           <span className="stat-d">
             {num(r.realizado, 1)} de {num(r.previsto, 1)} previsto · faltam {num(Math.max(0, r.previsto - r.realizado), 1)}
           </span>

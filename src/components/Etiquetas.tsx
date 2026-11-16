@@ -40,62 +40,50 @@ export function TextoRitmo({ saldo, fabric, falta, curto }: { saldo: number; fab
   return <span className={`ritmo ritmo-${ritmo}`}>{texto}</span>;
 }
 
-/**
- * Saldo × Fabricação: duas barras, cada uma com o nome e o % escritos.
- * Fabricação = % AVANÇO FABRIC (guias com 100%): o saldo que já deveria ter subido.
- */
-export function Comparacao({
-  saldo,
-  fabric,
-  previsto,
-  realizado,
-  compacto,
-}: {
-  saldo: number;
-  fabric: number;
-  previsto?: number;
-  realizado?: number;
-  compacto?: boolean;
-}) {
-  const falta = previsto !== undefined && realizado !== undefined ? atrasoQtd({ realizado, esperado: fabric * previsto }) : undefined;
+/** Barra do saldo e, embaixo dela, a barra da fabricação. Entra no mesmo lugar da barra de antes. */
+export function BarrasSaldo({ saldo, fabric }: { saldo: number; fabric?: number | null }) {
   return (
-    <div className={compacto ? "cmp cmp-c" : "cmp"}>
-      <span className="cmp-l cmp-saldo">
-        <span className="cmp-n">Saldo</span>
-        <span className="barra" role="presentation">
-          <span style={{ width: largura(saldo) }} />
-        </span>
-        <b className="cmp-v">{pct(saldo)}</b>
+    <>
+      <span className="barra" role="presentation">
+        <span style={{ width: largura(saldo) }} />
       </span>
-      <span className="cmp-l cmp-fab">
-        <span className="cmp-n">Fabricação</span>
-        <span className="barra" role="presentation">
+      {fabric !== undefined && fabric !== null && (
+        <span className="barra barra-fab" role="presentation">
           <span style={{ width: largura(fabric) }} />
         </span>
-        <b className="cmp-v">{pct(fabric)}</b>
-      </span>
-      <TextoRitmo saldo={saldo} fabric={fabric} falta={falta} curto={compacto} />
-    </div>
+      )}
+    </>
   );
 }
 
-/** Avanço do saldo de um código. Com o % de fabricação, vira a comparação Saldo × Fabricação. */
+/**
+ * Linha curta embaixo das barras: "■ Fabricação 88,4% · ▼ Atraso de 38,7 p.p.".
+ * Fabricação = % AVANÇO FABRIC (guias com 100%): o saldo que já deveria ter subido.
+ * Com `falta`, acrescenta quanto falta subir para acompanhar a fabricação.
+ */
+export function LinhaFabric({ saldo, fabric, falta }: { saldo: number; fabric: number; falta?: number }) {
+  return (
+    <span className="fab-linha">
+      <span>
+        <i className="leg-fab" aria-hidden="true" />
+        Fabricação <b>{pct(fabric)}</b>
+      </span>
+      <TextoRitmo saldo={saldo} fabric={fabric} falta={falta} curto={falta === undefined} />
+    </span>
+  );
+}
+
+/** Falta subir para acompanhar a fabricação (para a LinhaFabric dos blocos de destaque). */
+export const faltaFabric = (fabric: number, previsto: number, realizado: number) => atrasoQtd({ realizado, esperado: fabric * previsto });
+
+/** Avanço do saldo de um código: %, "x de y" e a barra. Com o % de fabricação, ganha a barra e a linha da fabricação. */
 export function Avanco({ valor, rotulo, fabric }: { valor: number; rotulo?: string; fabric?: number | null }) {
-  if (fabric !== undefined && fabric !== null) {
-    return (
-      <div className="avanco avanco-cmp">
-        <Comparacao compacto saldo={valor} fabric={fabric} />
-        {rotulo && <small>{rotulo}</small>}
-      </div>
-    );
-  }
   return (
     <div className="avanco">
       <b>{pct(valor)}</b>
       {rotulo ? <small>{rotulo}</small> : <span />}
-      <span className="barra" role="presentation">
-        <span className={valor >= 0.9999 ? "concluida" : undefined} style={{ width: largura(valor) }} />
-      </span>
+      <BarrasSaldo saldo={valor} fabric={fabric} />
+      {fabric !== undefined && fabric !== null && <LinhaFabric saldo={valor} fabric={fabric} />}
     </div>
   );
 }

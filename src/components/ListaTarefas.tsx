@@ -147,8 +147,8 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
           <span>Situação</span>
           {comFabric ? (
             <span className="cab-duplo">
-              {botaoOrdena("avanco", "Saldo")}
-              <span aria-hidden="true">×</span>
+              {botaoOrdena("avanco", "Avanço do saldo")}
+              <span aria-hidden="true">·</span>
               {botaoOrdena("atraso", "Atraso")}
             </span>
           ) : (
