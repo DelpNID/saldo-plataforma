@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Upload } from "lucide-react";
 import { Avanco } from "@/components/Etiquetas";
+import { EstadoVazio } from "@/components/layout/EstadoVazio";
+import { buttonVariants } from "@/components/ui/Button";
 import { Linhagem, type DesenhoLinhagem } from "@/components/Linhagem";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num } from "@/lib/formato";
@@ -13,16 +16,18 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
   const carga = await cargaAtiva();
   if (!carga) {
     return (
-      <>
-        <div className="legado"><div className="in pagina">
-          <div className="card vazio">
-            <b>Nenhuma planilha carregada ainda</b>
-            <Link className="btn sec" href="/importar">
+      <div className="rounded-card border border-subtle bg-bg shadow-subtle">
+        <h1 className="sr-only">Linhagem dos códigos de tarefa</h1>
+        <EstadoVazio
+          icone={Upload}
+          titulo="Nenhuma planilha carregada ainda"
+          acao={
+            <Link className={buttonVariants.ghost} href="/importar">
               Ir para Atualizar
             </Link>
-          </div>
-        </div></div>
-      </>
+          }
+        />
+      </div>
     );
   }
 
@@ -81,16 +86,11 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
   const concluidas = situacoes.filter((s) => s === "concluida").length;
 
   return (
-    <>
-      <div className="legado"><div className="in pagina">
-        <div className="cab-pagina">
-          <span className="kicker">Projeto › desenho › código de tarefa › tarefas filhas</span>
-          <div className="titulo">
-            <h1>Linhagem dos códigos de tarefa</h1>
-            <p className="nota">Clique num código para abrir o detalhamento.</p>
-          </div>
-        </div>
-        <Linhagem
+    <div className="flex flex-col gap-3">
+      {/* A trilha do topo nomeia a tela; o título fica para leitor de tela (regra do Visto). */}
+      <h1 className="sr-only">Linhagem dos códigos de tarefa</h1>
+      <p className="text-sm text-txt-2">Projeto › desenho › código de tarefa › tarefas filhas. Clique num código para abrir o detalhamento.</p>
+      <Linhagem
           desenhos={[...mapa.values()]}
           filhasPorCodigo={filhasPorCodigo}
           avancoPorCodigo={avancoPorCodigo}
@@ -101,21 +101,22 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
             .filter(Boolean)
             .slice(0, 20)}
         >
-          <div className="card lin-projeto">
-            <span>
-              <span className="rotulo">Projeto</span>
-              <br />
-              <b className="lin-projeto-n">{carga.projeto}</b>
-              <br />
-              <span className="nota mono">Centro de custo {carga.centroCusto}</span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-card border border-subtle bg-bg p-4 shadow-subtle">
+            <span className="flex flex-col leading-tight">
+              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-txt-2">Projeto</span>
+              <b className="text-[22px] font-bold text-txt">{carga.projeto}</b>
+              <span className="font-mono text-sm text-txt-2">Centro de custo {carga.centroCusto}</span>
             </span>
-            <Avanco valor={avanco} rotulo={`${num(carga.totalRealizado, 1)} de ${num(carga.totalPrevisto, 1)} previsto`} />
-            <span className="origem-n">
-              {num(tarefas.length)} códigos de tarefa · {num(semAvanco)} sem avanço · {num(andamento)} em andamento · {num(concluidas)} concluídos
+            <span className="min-w-[220px] max-w-[320px] flex-[1_1_220px]">
+              <Avanco valor={avanco} rotulo={`${num(carga.totalRealizado, 1)} de ${num(carga.totalPrevisto, 1)} previsto`} />
+            </span>
+            <span className="flex-[1_1_240px] text-sm text-txt">
+              <span className="font-mono">{num(tarefas.length)}</span> códigos de tarefa · <span className="font-mono">{num(semAvanco)}</span> sem
+              avanço · <span className="font-mono">{num(andamento)}</span> em andamento · <span className="font-mono">{num(concluidas)}</span>{" "}
+              concluídos
             </span>
           </div>
-        </Linhagem>
-      </div></div>
-    </>
+      </Linhagem>
+    </div>
   );
 }
