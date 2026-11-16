@@ -12,7 +12,9 @@
     "db:push": "prisma db push",
     "carga": "tsx scripts/carga.ts",
     "postinstall": "prisma generate",
-    "verificar": "tsx scripts/verificar.ts"
+    "verificar": "tsx scripts/verificar.ts",
+    "capturas": "tsx --env-file=.env scripts/capturar-telas.ts",
+    "icones": "tsx scripts/gerar-icones.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
