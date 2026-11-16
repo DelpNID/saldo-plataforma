@@ -1,10 +1,11 @@
-# Plataforma de Saldo — Contexto Claude Code
+# Ascent — Contexto Claude Code
 
-Painel online para o PCP e a gestão acompanharem a subida de saldo por projeto:
-o que já subiu, o que falta e qual componente está pendente de baixa.
+**Ascent** (antes "Plataforma de Saldo"): painel online para o PCP e a gestão acompanharem a subida de saldo por projeto:
+o que já subiu, o que falta e qual componente está pendente de baixa. O endereço (`saldopcpdelp.vercel.app`), o projeto
+na Vercel (`subidadesaldo`) e o repositório (`saldo-plataforma`) mantiveram os nomes antigos de propósito.
 
 ## Stack
-Next.js 14 (App Router) + TypeScript + Prisma + PostgreSQL (Neon) · deploy na Vercel · código no GitHub.
+Next.js 14 (App Router) + TypeScript + Tailwind CSS 3.4 + Prisma + PostgreSQL (Neon) · deploy na Vercel · código no GitHub.
 
 ## Modo NID: Formal, com override registrado
 Ciclo padrão: /nid:specify → /nid:plan → /nid:gate → /nid:implement.
@@ -39,15 +40,37 @@ A planilha é a fonte da verdade. A carga lê os valores já calculados pelo Exc
 ## Camadas na tela
 Projeto → código de tarefa → tarefas filhas → estruturas (OPs) → componentes.
 
-## Padrão visual
-Layout v2 (redesenho do Claude Design, handoff de 15/11/2026): barra superior com seletor de projeto,
-cabeçalho de página compacto (`.cab-pagina`), faixa de indicadores (`.stats`), blocos parados ao rolar (`.fixo`).
-CSS único em `src/app/globals.css` com tokens `--delp-*` (seção 1); a seção 6 tem os ajustes da plataforma fora do handoff.
-Cores e fonte da instrução corporativa: Delp Red `#CC0F10` só em destaque/ação, neutros `#EAE5DF` `#B0B0B0`, preto e branco,
-Barlow com reserva Inter. Situação sempre com texto: verde ok, laranja com texto preto parcial, vermelho pendente.
-Alvo de toque ≥ 44px (`--delp-toque`).
+## Padrão visual: o do Visto, copiado ao pé da letra
+Decisão de 16/11/2026 (design `docs/superpowers/specs/2026-11-16-ascent-padrao-visto-design.md`): o Ascent segue o mesmo padrão
+das aplicações do NID copiando o **código** da camada de design do Visto (`C:\dev\gg-digital\delp-visto`, commit `f66a6c3`).
+- **Cópias**: `tailwind.config.js`, tokens de `src/app/globals.css` (= `src/index.css` do Visto), `src/components/ui/`,
+  `src/components/layout/` (moldura: `AppShell`, `Sidebar`, `Topbar`, `barra/*`), `src/lib/tema.ts`, `barra-recolhida.ts`,
+  `indicador-tendencia.ts`, `use-largura-elemento.ts`. Cada arquivo copiado abre com `Origem: delp-visto@f66a6c3 <caminho>`;
+  **todo desvio vai para `docs/visto-desvios.md`**. Para atualizar uma peça, compare com o Visto e mantenha os desvios.
+- **Tokens, nunca hex solto nem classe fixa** (`bg-white`, `text-green-700`): cores são triplas RGB em `:root` e
+  `:root[data-tema='escuro']`. Exceções declaradas: metadados (`layout.tsx`, `manifest.ts`) e a arte do Login.
+- **Tema** claro/escuro/automático: `src/lib/tema.ts` (chave `ascent.tema`), script no `<head>` (`src/lib/tema-script.ts`),
+  botão no topo e escolha completa no pé da barra lateral. Arte da marca troca por CSS (`.so-tema-claro/.so-tema-escuro`).
+- **Cor de gráfico** só de `src/lib/cores.ts` (`ESCALA_VERMELHOS`, `COR_ASCENT`), por `style`: uma escala de vermelhos,
+  degraus vizinhos nunca no mesmo gráfico, degraus 1–2 só com rótulo escrito. Situação = `Badge` (texto + ponto), ritmo = `SELO_TOM`.
+- **Réguas**: bloco `Painel`; faixa de indicadores `.grade-indicadores` com `TileIndicador`; rótulo e cabeçalho de tabela em
+  micro-caps cinza (nunca vermelho); todo número, data e código em `font-mono`; Delp Red só em destaque e ação.
+- **Moldura**: telas logadas no grupo `src/app/(app)/` (layout com `dadosDaMoldura()`); Login e a 404 da raiz fora dela.
+  Sem cabeçalho de página: a trilha do topo nomeia a tela (`src/lib/navegacao.ts`) e cada tela tem um `h1` `sr-only`.
+  O layout não se refaz ao navegar: o seletor de projeto e o número de Pendências se atualizam ao recarregar ou com
+  `router.refresh()` (o Importador já faz depois de gravar).
+- **Pontos de quebra**: só `sm:`, `md:` (padding do `main`), `shell:` (900px) e `duascol:` (1280px); `lg:`/`xl:` só no Login copiado.
+- Alvo de toque ≥ 44px (`min-h-11`); blocos que ficavam parados ao rolar continuam parados **abaixo** do topo de 64px (`top-16`).
+- Os neutros são os cinzas do Visto (não o `#EAE5DF` corporativo), por decisão do responsável; o bege segue no ícone da marca.
+
 Filtros do "Mostrar" na árvore são só de exibição (`filtrarArvore`, `pendenciasDoCodigo` em `regras.ts`): não mudam cálculo.
 Seletor de projeto mostra só o projeto ativo: vários projetos exigem mudar a regra da importação (uma carga ativa por vez).
+
+## Conferência visual
+`npm run capturas -- <etapa>` fotografa as telas no Edge da estação (`scripts/capturar-telas.ts`) e relata erro de console,
+texto abaixo do AA e rolagem lateral. Precisa do `npm run dev` na porta 3000 **e** do banco: na rede da Delp a porta 5432 do
+Neon é bloqueada. As fotos vão para `design/ascent-verificacao/` (fora do git: têm dado de cliente).
+Não rode `npm run build` com o `npm run dev` ligado (o build apaga o `.next` do dev) nem dois `npm run dev` na mesma pasta.
 
 ## NUNCA faça
 - Commitar `.env`, planilha ou qualquer dado de projeto de cliente.

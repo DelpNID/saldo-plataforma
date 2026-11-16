@@ -29,9 +29,22 @@ Nada aqui foi aplicado no Visto.
 | `src/components/layout/barra/SeloNumero.tsx` (= `SeloNumero` de `SeloConversas.tsx`) | Fundo `bg-grad-delp` | No escuro o `--delp-red` clareia e o branco por cima cai para ~3:1. |
 | `src/components/layout/SeletorTema.tsx` (do grupo "Tema" de `ContaNoCabecalho.tsx`) | Mora no pé da barra; opção ativa em `bg-grad-delp`; 44px | O Ascent não tem menu da conta; mesmo motivo de contraste do selo. |
 | `src/components/layout/BotaoTema.tsx` | Arquivo próprio | No Visto ele mora dentro de `ContaNoCabecalho.tsx`. |
+| `src/components/ui/Campo.tsx` | Só a `CLASSE_CAMPO` ficou | O componente `Campo` e o `TITULO_SECAO` não têm uso no Ascent. |
+| `tailwind.config.js` | Saem as animações (`kenburns`, `etapa`, `shake`, `confirmacao`, `selo`, `risco`, `pulso`) | São do carrossel do Login e do `AvisoFlutuante` do Visto, que o Ascent não tem. |
+| `src/app/login/page.tsx` (= `LoginPage.tsx`) | Uma cena só (`public/images/cena-ascent.svg`, arte própria na linguagem das cenas do Visto), sem carrossel; "Entrar no sistema" (sem usuário lembrado: o Ascent entra com a senha da equipe); sem "Esqueci minha senha", "Lembrar usuário", aviso de Caps Lock e freio de tentativas; rodapé sem "tentativas registradas" e sem aviso de privacidade; endosso da Delp branco no tema escuro (duas imagens trocadas por CSS) | O Ascent não tem usuários, recuperação de senha, trilha de tentativas nem página de privacidade: o texto só diz o que é verdade no sistema. |
+| `src/components/CampoSenha.tsx` (campo "Senha" + `classeInput` de `LoginPage.tsx`) | Componente cliente próprio | O Login do Ascent é de servidor; só o mostrar/ocultar precisa de estado. |
+| `src/lib/saudacao.ts` (= `saudacaoDaHora` de `src/lib/formato.ts`) | Arquivo próprio, com o teste do Visto | O `formato.ts` do Ascent já existia e é outro. |
+
+## Cores fixas permitidas
+
+Fora dos tokens, só nestes pontos:
+- `src/app/layout.tsx` (`themeColor`) e `src/app/manifest.ts` (`background_color`, `theme_color`): são metadados para o navegador e o celular, não estilo de tela.
+- A arte do Login (`public/images/cena-ascent.svg`): é sempre escura.
+- A sombra do botão Entrar (`CLASSE_BOTAO_ENTRAR`): veio igual do Visto.
 
 ## Peças do Visto que não vieram
 
 Pela regra do Visto, **peça sem uso não fica**. Ficaram de fora até agora:
 - `use-prefere-menos-movimento.ts`, que nenhuma peça copiada usa. Se vier, precisa começar em `false` e ler o `window` num efeito, porque o Visto lê no estado inicial e isso quebra a renderização no servidor.
 - `Modal`, `Abas`, `Combobox`, `CabecalhoSecao`, `FaixaDaMarca`, o sino, o menu da conta e as Configurações (fora do escopo do Ascent).
+- `Card` e `Carregando` chegaram a ser copiados, mas saíram na limpeza final: nenhuma tela os usou.

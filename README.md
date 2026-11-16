@@ -1,9 +1,12 @@
-# Plataforma de Saldo
+# Ascent
 
-Painel online da subida de saldo. O PCP vê, de qualquer lugar, como está o saldo de cada código de tarefa
-e consegue abrir as camadas até o componente pendente de baixa.
+Painel online da subida de saldo (antes "Plataforma de Saldo"). O PCP vê, de qualquer lugar, como está o saldo
+de cada código de tarefa e consegue abrir as camadas até o componente pendente de baixa.
 
-**Stack:** Next.js 14 · TypeScript · Prisma · PostgreSQL (Neon) · Vercel · GitHub
+**Stack:** Next.js 14 · TypeScript · Tailwind CSS 3.4 · Prisma · PostgreSQL (Neon) · Vercel · GitHub
+
+**Visual:** o mesmo padrão do Visto (tokens, componentes e moldura copiados de `delp-visto@f66a6c3`), com tema claro e
+escuro. O que mudou em relação ao Visto está em [`docs/visto-desvios.md`](docs/visto-desvios.md).
 
 ## Rodar na máquina
 

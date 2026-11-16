@@ -10,8 +10,6 @@ import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
 import "./globals.css";
-// CSS antigo, preso em .legado enquanto as telas migram para o padrão do Visto.
-import "./legado.css";
 
 export const metadata: Metadata = {
   title: { default: "Ascent", template: "%s · Ascent" },

@@ -56,9 +56,9 @@ const ROTULO = "text-[11px] font-bold uppercase tracking-[0.08em] text-txt-2";
 
 /** OP da estrutura (tocar para copiar). Com mais de uma OP, mostra a primeira e "+N". */
 export function OpsDaEstrutura({ ops }: { ops: string[] }) {
-  if (ops.length === 0) return <span className="no-op text-sm text-txt-2">sem OP</span>;
+  if (ops.length === 0) return <span className="text-sm text-txt-2">sem OP</span>;
   return (
-    <span className="no-op flex flex-col items-start leading-tight">
+    <span className="flex flex-col items-start leading-tight">
       <Copiar valor={ops[0]} tipo="OP" />
       {ops.length > 1 && (
         <small className="text-xs text-txt-2" title={ops.slice(1).join(", ")}>

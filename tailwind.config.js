@@ -1,6 +1,7 @@
 // Origem: delp-visto@f66a6c3 tailwind.config.js
 // Desvios: `content` aponta só para src/ (não há index.html no Next); saem as
-//   cores sem uso no Ascent (`tinta`, `mesa`, `marca-fundo`) — ver docs/visto-desvios.md.
+//   cores sem uso no Ascent (`tinta`, `mesa`, `marca-fundo`) e as animações do Login e do
+//   AvisoFlutuante do Visto (o Ascent não usa) — ver docs/visto-desvios.md.
 // -----------------------------------------------------------------------------
 // tailwind.config.js — tokens de design DELP no Tailwind
 //
@@ -119,70 +120,6 @@ export default {
       },
       // Transições padrão de 300ms (limite do design system).
       transitionDuration: { DEFAULT: '300ms' },
-      // Animações da tela de login (o CSS global as desliga inteiras quando
-      // o sistema pede para reduzir movimento).
-      keyframes: {
-        // Zoom lento "Ken Burns" do banner ativo do carrossel.
-        kenburns: {
-          from: { transform: 'scale(1)' },
-          to: { transform: 'scale(1.08)' },
-        },
-        // Entrada suave ao trocar de etapa no formulário de login.
-        etapa: {
-          from: { opacity: '0', transform: 'translateY(8px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
-        // Tremor de reforço quando usuário/senha são recusados.
-        shake: {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '20%, 60%': { transform: 'translateX(-6px)' },
-          '40%, 80%': { transform: 'translateX(6px)' },
-        },
-        // Confirmação de decisão no meio da tela (AvisoFlutuante). São quatro
-        // animações encadeadas por atraso, e TODAS partem de um estado inicial
-        // para o valor de repouso do elemento — nunca o contrário. É o que faz
-        // o bloco global de prefers-reduced-motion (que zera as animações)
-        // deixar o aviso legível em vez de congelá-lo meio desenhado.
-        //
-        // O cartão sobe ao entrar, segura e sai flutuando. A duração casa com
-        // DURACAO_MS de lá.
-        confirmacao: {
-          '0%': { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
-          '8%': { opacity: '1', transform: 'translateY(0) scale(1)' },
-          '82%': { opacity: '1', transform: 'translateY(0) scale(1)' },
-          '100%': { opacity: '0', transform: 'translateY(-4px) scale(0.98)' },
-        },
-        // O selo dá um salto curto e passa um pouco do tamanho antes de assentar.
-        selo: {
-          '0%': { opacity: '0', transform: 'scale(0.4)' },
-          '60%': { opacity: '1', transform: 'scale(1.08)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
-        },
-        // O traço do certo se desenha: o dash começa todo deslocado e volta a
-        // zero, que é o valor de repouso (ícone inteiro).
-        //
-        // O deslocamento parte do COMPRIMENTO do traço, que muda com o
-        // desenho (o certo mede ~21 unidades do viewBox; o X, ~31) — por isso
-        // vem em variável, posta pelo componente junto do dasharray. Um valor
-        // maior que o comprimento gastaria o começo da animação com o traço
-        // ainda fora da vista, e o risco sairia atrasado e apressado; um menor
-        // deixaria o desenho incompleto em repouso.
-        risco: { from: { strokeDashoffset: 'var(--traco)' } },
-        // Um pulso só, saindo de trás do selo.
-        pulso: {
-          from: { opacity: '.35', transform: 'scale(1)' },
-          to: { opacity: '0', transform: 'scale(1.9)' },
-        },
-      },
-      animation: {
-        kenburns: 'kenburns 7s ease-out forwards',
-        etapa: 'etapa 200ms ease-out',
-        shake: 'shake 400ms ease-in-out',
-        confirmacao: 'confirmacao 1.9s ease-out forwards',
-        selo: 'selo 380ms cubic-bezier(.34,1.56,.64,1) 40ms both',
-        risco: 'risco 600ms ease-out 240ms both',
-        pulso: 'pulso 700ms ease-out 240ms both',
-      },
     },
   },
 }

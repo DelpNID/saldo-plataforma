@@ -7,11 +7,6 @@ import { Badge } from "./ui/Badge";
 
 // Situação: o Badge do Visto (texto + ponto colorido; a cor nunca anda sozinha).
 // Barras: a escala de vermelhos (src/lib/cores.ts), sempre com nome e % escritos.
-//
-// As classes antigas (avanco, avanco-cmp, cmp, cmp-c, cmp-l, cmp-n, cmp-v, barra,
-// ritmo) ficam no markup só como GANCHOS: dentro de .legado (telas ainda não
-// migradas) as regras antigas de contexto posicionam a barra; fora dele não fazem
-// nada. Saem na limpeza final, junto com o legado.css.
 
 const CLASSE_SALDO: Record<StatusSaldo, keyof typeof TOM_DA_CLASSE> = { ok: "ok", parcial: "parcial", "sem-saldo": "pend", "sem-dado": "neutro" };
 const CLASSE_SITUACAO: Record<SituacaoTarefa, keyof typeof TOM_DA_CLASSE> = { concluida: "ok", andamento: "parcial", "sem-avanco": "pend" };
@@ -42,7 +37,7 @@ const largura = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
 /** A trilha e o preenchimento de uma barra de avanço, na cor de gráfico pedida. */
 export function Barra({ valor, cor, className }: { valor: number; cor: string; className?: string }) {
   return (
-    <span className={clsx("barra block h-2 overflow-hidden rounded-full bg-bg-3", className)} role="presentation">
+    <span className={clsx("block h-2 overflow-hidden rounded-full bg-bg-3", className)} role="presentation">
       <span className="block h-full rounded-full" style={{ width: largura(valor), background: cor }} />
     </span>
   );
@@ -58,7 +53,7 @@ export function TextoRitmo({ saldo, fabric, falta, curto }: { saldo: number; fab
   } else if (ritmo === "a-frente") texto = curto ? `▲ ${num(pp, 1)} p.p. à frente` : `▲ Saldo ${num(pp, 1)} p.p. à frente da fabricação`;
   else texto = curto ? "= Acompanha" : "= Saldo acompanha a fabricação";
   return (
-    <span className={clsx("ritmo font-semibold", curto ? "text-xs" : "text-sm", ritmo === "atraso" ? SELO_TOM.danger : SELO_TOM.success)}>
+    <span className={clsx("font-semibold", curto ? "text-xs" : "text-sm", ritmo === "atraso" ? SELO_TOM.danger : SELO_TOM.success)}>
       {texto}
     </span>
   );
@@ -83,23 +78,22 @@ export function Comparacao({
   compacto?: boolean;
 }) {
   const falta = previsto !== undefined && realizado !== undefined ? atrasoQtd({ realizado, esperado: fabric * previsto }) : undefined;
-  const linha = (nome: string, valor: number, cor: string, classe: string) => (
+  const linha = (nome: string, valor: number, cor: string) => (
     <span
       className={clsx(
-        "cmp-l grid min-w-0 items-center",
-        classe,
+        "grid min-w-0 items-center",
         compacto ? "grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-px" : "grid-cols-[84px_minmax(0,1fr)_56px] gap-x-2.5",
       )}
     >
-      <span className={clsx("cmp-n font-semibold text-txt-2", compacto ? "col-start-1 row-start-1 text-xs" : "text-[13px]")}>{nome}</span>
+      <span className={clsx("font-semibold text-txt-2", compacto ? "col-start-1 row-start-1 text-xs" : "text-[13px]")}>{nome}</span>
       <Barra valor={valor} cor={cor} className={compacto ? "col-span-2 row-start-2 h-[7px]" : "h-2.5"} />
-      <b className={clsx("cmp-v text-right font-mono font-bold text-txt", compacto ? "col-start-2 row-start-1 text-sm" : "text-[15px]")}>{pct(valor)}</b>
+      <b className={clsx("text-right font-mono font-bold text-txt", compacto ? "col-start-2 row-start-1 text-sm" : "text-[15px]")}>{pct(valor)}</b>
     </span>
   );
   return (
-    <div className={clsx("flex min-w-0 flex-col", compacto ? "cmp cmp-c gap-1" : "cmp gap-1.5")}>
-      {linha("Saldo", saldo, COR_ASCENT.saldo, "cmp-saldo")}
-      {linha("Fabricação", fabric, COR_ASCENT.fabricacao, "cmp-fab")}
+    <div className={clsx("flex min-w-0 flex-col", compacto ? "gap-1" : "gap-1.5")}>
+      {linha("Saldo", saldo, COR_ASCENT.saldo)}
+      {linha("Fabricação", fabric, COR_ASCENT.fabricacao)}
       <TextoRitmo saldo={saldo} fabric={fabric} falta={falta} curto={compacto} />
     </div>
   );
@@ -109,14 +103,14 @@ export function Comparacao({
 export function Avanco({ valor, rotulo, fabric }: { valor: number; rotulo?: string; fabric?: number | null }) {
   if (fabric !== undefined && fabric !== null) {
     return (
-      <div className="avanco avanco-cmp flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 flex-col gap-1">
         <Comparacao compacto saldo={valor} fabric={fabric} />
         {rotulo && <small className="font-mono text-xs text-txt-2">{rotulo}</small>}
       </div>
     );
   }
   return (
-    <div className="avanco grid min-w-0 grid-cols-[auto_1fr] items-baseline gap-x-2.5 gap-y-1">
+    <div className="grid min-w-0 grid-cols-[auto_1fr] items-baseline gap-x-2.5 gap-y-1">
       <b className="font-mono text-[17px] font-bold text-txt">{pct(valor)}</b>
       {rotulo ? <small className="font-mono text-xs text-txt-2">{rotulo}</small> : <span />}
       <Barra valor={valor} cor={COR_ASCENT.avanco} className="col-span-2" />
