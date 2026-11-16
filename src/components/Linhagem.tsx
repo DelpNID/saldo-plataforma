@@ -290,7 +290,7 @@ export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, ab
                       >
                         <Link
                           href={`/tarefa/${encodeURIComponent(t.cod)}`}
-                          className="group grid min-h-16 grid-cols-[minmax(0,1fr)_auto_12px] items-center gap-x-3 gap-y-1.5 rounded-card border border-subtle bg-bg px-3.5 py-2.5 text-txt shadow-subtle transition-colors hover:border-txt-muted duascol:grid-cols-[minmax(0,1fr)_auto_minmax(180px,220px)_12px]"
+                          className="group grid min-h-16 grid-cols-[minmax(0,1fr)_auto_12px] items-center gap-x-3 gap-y-1.5 rounded-card border border-subtle bg-bg px-3.5 py-2.5 text-txt shadow-subtle transition-colors hover:border-txt-muted duascol:grid-cols-[minmax(0,1fr)_auto_132px_12px]"
                         >
                           <span className="grid min-w-0 grid-cols-[46px_minmax(0,1fr)] items-baseline gap-x-2 leading-tight">
                             <b className="font-mono font-bold">{t.cod}</b>

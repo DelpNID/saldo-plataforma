@@ -191,8 +191,8 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
         <span className={CABECALHO}>Situação</span>
         {comFabric ? (
           <span className={clsx("flex items-center gap-1.5", CABECALHO)}>
-            {botaoOrdena("avanco", "Saldo")}
-            <span aria-hidden="true">×</span>
+            {botaoOrdena("avanco", "Avanço do saldo")}
+            <span aria-hidden="true">·</span>
             {botaoOrdena("atraso", "Atraso")}
           </span>
         ) : (

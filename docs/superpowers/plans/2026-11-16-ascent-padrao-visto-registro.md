@@ -101,3 +101,8 @@ Final: minor (deferred): Ctrl+C no meio das capturas deixa o perfil temporário 
 Final: Ruling (declined-to-judge do revisor): todos aceitos como fora do escopo — cinzas do Visto (decisão do usuário), seletor/selo só atualizam ao recarregar (gate item 10), altura dos blocos parados no celular no Painel/Pendências (telas de computador), themeColor segue o sistema, storage bloqueado (cópia do Visto), C2PA nas artes (design manda manter), @fontsource sem preload (design §5), visual do Login (só com render) — custo: nenhum previsto.
 Final review: revisor independente (opus); 6 importantes corrigidos em eb7dd81; next build verde em worktree.
 ```
+
+## Depois da revisão final (16/11, antes do Pull Request)
+
+- Ruling: o Login fica sempre no tema claro (`data-tema="claro"` na raiz), a pedido do responsável — no Visto o painel segue o tema — custo se errado: reverter o atributo na raiz do Login.
+- Ruling: a `main` recebeu dois ajustes depois que a branch saiu (3797179: "volta os blocos de antes e só acrescenta a barra da fabricação"; 745318c: "no celular o avanço desce para baixo do código"). A intenção foi levada para o novo visual em vez de descartada no merge: `Comparacao` sai; entram `BarrasSaldo`, `LinhaFabric` e `faltaFabric` (`tests/etiquetas.test.ts`); títulos voltam a "Avanço do saldo"; a coluna do avanço na Linhagem volta a 132px. O avanço abaixo do código já valia na branch abaixo de 1280px (`duascol:`), o que cobre o celular — custo se errado: no intervalo de 700 a 1279px o avanço fica embaixo do código, e não ao lado como na `main`.

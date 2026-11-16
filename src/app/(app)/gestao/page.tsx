@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
-import { Barra, Comparacao, EtiquetaSituacao, TextoRitmo } from "@/components/Etiquetas";
+import { Barra, BarrasSaldo, EtiquetaSituacao, LinhaFabric, TextoRitmo, faltaFabric } from "@/components/Etiquetas";
 import { EstadoVazio } from "@/components/layout/EstadoVazio";
 import { Painel } from "@/components/layout/Painel";
 import { Badge } from "@/components/ui/Badge";
@@ -184,21 +184,20 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           .sort((a, b) => compararCodigo(a.cod, b.cod))}
       />
 
-      {/* O indicador principal em linha própria (como era antes): a comparação Saldo × Fabricação precisa
-          de largura, e na faixa fluida (base de 152px) a barra sumia. Revisão final, 16/11. */}
+      {/* O indicador principal em linha própria (como era antes): as barras do saldo e da fabricação
+          precisam de largura, e na faixa fluida (base de 152px) a barra sumia. Revisão final, 16/11. */}
       <section aria-label="Avanço do saldo">
         <TileIndicador
           variante="painel"
-          rotulo={`${fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"} · ${carga.projeto}`}
+          rotulo={`Avanço do saldo · ${carga.projeto}`}
           valor={pct(avanco)}
           variacaoTexto={variacao(ontem ? (avanco - avancoDe(ontem)) * 100 : null, "pp", true, desdeOntem)}
           detalhe={`${num(atual.realizado, 1)} de ${num(atual.previsto, 1)} previsto · faltam ${num(Math.max(0, atual.previsto - atual.realizado), 1)}`}
         >
-          <div className="mt-1.5">
-            {fabric !== null ? (
-              <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
-            ) : (
-              <Barra valor={avanco} cor={COR_ASCENT.avanco} className="h-2.5" />
+          <div className="mt-1.5 flex flex-col gap-1">
+            <BarrasSaldo saldo={avanco} fabric={fabric} altura="h-2.5" />
+            {fabric !== null && (
+              <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado)} />
             )}
           </div>
           {semana && (
@@ -244,7 +243,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
             <GraficoEvolucao pontos={pontos} />
           </Painel>
 
-          <Painel titulo={fabric !== null ? "Saldo × fabricação por grupo de código" : "Avanço por grupo de código"}>
+          <Painel titulo="Avanço por grupo de código">
             <ul className="flex flex-col gap-3">
               {porGrupo.map(([g, v]) => (
                 <li key={g} className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-1">
@@ -256,12 +255,9 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                     </span>{" "}
                     · {num(v.codigos)} códigos
                   </span>
-                  <span className="col-span-3">
-                    {fabric !== null ? (
-                      <Comparacao compacto saldo={avancoDe(v)} fabric={fabricDe(v)} />
-                    ) : (
-                      <Barra valor={avancoDe(v)} cor={COR_ASCENT.avanco} />
-                    )}
+                  <span className="col-span-3 flex flex-col gap-1">
+                    <BarrasSaldo saldo={avancoDe(v)} fabric={fabric !== null && v.previsto > 0 ? fabricDe(v) : null} />
+                    {fabric !== null && v.previsto > 0 && <LinhaFabric saldo={avancoDe(v)} fabric={fabricDe(v)} />}
                   </span>
                 </li>
               ))}

@@ -1,11 +1,10 @@
 import { ChevronRight, Upload } from "lucide-react";
 import Link from "next/link";
-import { Barra, Comparacao } from "@/components/Etiquetas";
+import { BarrasSaldo, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
 import { ListaTarefas, type TarefaResumo } from "@/components/ListaTarefas";
 import { EstadoVazio } from "@/components/layout/EstadoVazio";
 import { buttonVariants } from "@/components/ui/Button";
 import { TileIndicador } from "@/components/ui/TileIndicador";
-import { COR_ASCENT } from "@/lib/cores";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num, pct } from "@/lib/formato";
 import { RETRABALHO, descricaoCurta, situacaoTarefa } from "@/lib/regras";
@@ -81,15 +80,12 @@ export default async function Painel() {
 
       <section aria-label="Resumo do projeto" className="grade-indicadores">
         <TileIndicador
-          rotulo={carga.comFabric ? "Avanço do saldo × fabricação" : "Avanço do saldo"}
+          rotulo="Avanço do saldo"
           valor={pct(avanco)}
           detalhe={`${num(carga.totalRealizado, 1)} de ${num(carga.totalPrevisto, 1)} previsto · centro de custo ${carga.centroCusto}`}
         >
-          {carga.comFabric ? (
-            <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
-          ) : (
-            <Barra valor={avanco} cor={COR_ASCENT.avanco} />
-          )}
+          <BarrasSaldo saldo={avanco} fabric={carga.comFabric ? fabric : null} />
+          {carga.comFabric && <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado)} />}
         </TileIndicador>
         <TileIndicador
           rotulo="Códigos de tarefa"

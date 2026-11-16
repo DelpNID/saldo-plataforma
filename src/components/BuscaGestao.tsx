@@ -3,9 +3,8 @@
 import { clsx } from "clsx";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Barra, Comparacao, EtiquetaSituacao } from "./Etiquetas";
+import { BarrasSaldo, EtiquetaSituacao, LinhaFabric, faltaFabric } from "./Etiquetas";
 import { CLASSE_CAMPO } from "./ui/Campo";
-import { COR_ASCENT } from "@/lib/cores";
 import { num, pct } from "@/lib/formato";
 import { buscarCodigos, resumirSelecao, type CodigoBusca } from "@/lib/kpis";
 
@@ -51,11 +50,8 @@ export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codi
               {num(r.codigos)} {r.codigos === 1 ? "código de tarefa" : "códigos de tarefa"} · {num(r.desenhos)} {r.desenhos === 1 ? "desenho" : "desenhos"}
             </span>
           </div>
-          {comFabric ? (
-            <Comparacao saldo={r.avanco} fabric={r.fabric} previsto={r.previsto} realizado={r.realizado} />
-          ) : (
-            <Barra valor={r.avanco} cor={COR_ASCENT.avanco} className="h-2.5" />
-          )}
+          <BarrasSaldo saldo={r.avanco} fabric={comFabric ? r.fabric : null} altura="h-2.5" />
+          {comFabric && <LinhaFabric saldo={r.avanco} fabric={r.fabric} falta={faltaFabric(r.fabric, r.previsto, r.realizado)} />}
           <span className="text-sm text-txt-2">
             <span className="font-mono">
               {num(r.realizado, 1)} de {num(r.previsto, 1)}

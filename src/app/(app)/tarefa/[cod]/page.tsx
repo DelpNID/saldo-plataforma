@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { type Celula } from "@/components/Acoes";
 import { CabecalhoArvore, NoEstrutura, OpsDaEstrutura, chaveCorte, type Cortes } from "@/components/Arvore";
 import { ControlesTarefa, TrocaCodigo } from "@/components/ControlesTarefa";
-import { Avanco, Barra, Comparacao, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
+import { Avanco, Barra, BarrasSaldo, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
 import { FichaParada } from "@/components/FichaParada";
 import { EstadoVazio } from "@/components/layout/EstadoVazio";
 import { Painel } from "@/components/layout/Painel";
@@ -249,15 +249,12 @@ export default async function TarefaPage({ params, searchParams }: Props) {
 
       <section aria-label="Resumo do código de tarefa" className="grade-indicadores">
         <TileIndicador
-          rotulo={fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"}
+          rotulo="Avanço do saldo"
           valor={pct(avanco)}
           detalhe={`${num(realizado, 1)} de ${num(previsto, 1)} previsto`}
         >
-          {fabric !== null ? (
-            <Comparacao saldo={avanco} fabric={fabric} previsto={previsto} realizado={realizado} />
-          ) : (
-            <Barra valor={avanco} cor={COR_ASCENT.avanco} />
-          )}
+          <BarrasSaldo saldo={avanco} fabric={fabric} />
+          {fabric !== null && <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, previsto, realizado)} />}
         </TileIndicador>
         <TileIndicador
           rotulo="Execuções"
