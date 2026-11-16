@@ -1,8 +1,14 @@
+import { clsx } from "clsx";
+import { ChevronLeft, ChevronRight, SearchX, Upload, X } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 import { Copiar, Exportar, Imprimir, type Celula } from "@/components/Acoes";
 import { CLASSE_CORTE } from "@/components/Arvore";
+import { EstadoVazio } from "@/components/layout/EstadoVazio";
+import { Badge } from "@/components/ui/Badge";
+import { buttonVariants } from "@/components/ui/Button";
+import { TOM_DA_CLASSE } from "@/lib/cores";
 import { FiltrosPendencias, type ValoresFiltro } from "@/components/FiltrosPendencias";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num } from "@/lib/formato";
@@ -59,16 +65,18 @@ export default async function Pendencias({ searchParams }: Props) {
   const carga = await cargaAtiva();
   if (!carga) {
     return (
-      <>
-        <div className="legado"><div className="in pagina">
-          <div className="card vazio">
-            <b>Nenhuma planilha carregada ainda</b>
-            <Link className="btn sec" href="/importar">
+      <div className="rounded-card border border-subtle bg-bg shadow-subtle">
+        <h1 className="sr-only">Pendências de baixa</h1>
+        <EstadoVazio
+          icone={Upload}
+          titulo="Nenhuma planilha carregada ainda"
+          acao={
+            <Link className={buttonVariants.ghost} href="/importar">
               Ir para Atualizar
             </Link>
-          </div>
-        </div></div>
-      </>
+          }
+        />
+      </div>
     );
   }
 
@@ -177,215 +185,260 @@ export default async function Pendencias({ searchParams }: Props) {
   if (grupo && !opcoesGrupo.some((o) => o.valor === grupo)) opcoesGrupo.unshift({ valor: grupo, rotulo: `${grupo} (0)` });
   const valores: ValoresFiltro = { q, tarefa, grupo, plano, ordem };
 
+  /** Cabeçalho de tabela na régua do Visto: cinza, nunca vermelho. */
+  const CAB = "px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-txt-muted";
+  const ORDENA = "inline-flex min-h-11 items-center text-[11px] font-semibold uppercase tracking-[0.1em] text-txt-muted hover:text-txt";
+  const BOTAO_PAG = `${buttonVariants.ghost} !min-w-11 !px-3 !text-[13px]`;
+  const seta = (s?: string) => (s === "ascending" ? " ↑" : s === "descending" ? " ↓" : "");
+  const seloCorte = (st: StatusCorte | null | undefined) =>
+    st ? <Badge tone={TOM_DA_CLASSE[CLASSE_CORTE[st]]}>{ROTULO_CORTE[st]}</Badge> : <Badge tone="neutral">Fora da aba CNC_PCQ</Badge>;
+
   return (
-    <>
-      <div className="legado"><div className="in pagina">
-        <div className="cab-pagina">
-          <span className="kicker">Coluna APONTADO = 0 na aba Componentes</span>
-          <div className="titulo">
-            <h1>Pendências de baixa</h1>
-            <p className="resumo">
-              {num(total)} componentes sem apontamento
-              {filtrado ? ` · de ${num(totalPendentes)} pendentes de baixa` : ""}
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col gap-4">
+      {/* A trilha do topo nomeia a tela; o título fica para leitor de tela (regra do Visto). */}
+      <h1 className="sr-only">Pendências de baixa</h1>
+      <p className="text-sm text-txt-2">
+        <b className="font-mono font-bold text-txt">{num(total)}</b> componentes sem apontamento
+        {filtrado ? (
+          <>
+            {" "}
+            · de <span className="font-mono">{num(totalPendentes)}</span> pendentes de baixa
+          </>
+        ) : null}
+        <span className="block text-xs">Coluna APONTADO = 0 na aba Componentes.</span>
+      </p>
 
-        <div className="fixo">
-          <FiltrosPendencias
-            key={JSON.stringify(valores)}
-            valores={valores}
-            tarefas={tarefas.map((t) => ({ valor: t.tarPai, rotulo: `${t.tarPai} (${num(t._count._all)})` }))}
-            grupos={opcoesGrupo}
-            planos={Object.entries(FILTRO_PLANO).map(([k, f]) => ({ valor: k, rotulo: f.rotulo }))}
-          />
-          <div className="filtros-ativos">
-            {ativos.length > 0 && (
-              <>
-                <span>Filtros ativos:</span>
-                {ativos.map((a) => (
-                  <Link key={a.rotulo} className="filtro-ativo" href={link(params, a.sem)} aria-label={`Remover filtro ${a.rotulo}`} scroll={false}>
-                    {a.rotulo}
-                  </Link>
-                ))}
-                <Link className="btn sec" href="/pendencias">
-                  Limpar
+      {/* Filtros e filtros ativos parados ao rolar, abaixo do topo de 64px (como o .fixo de antes). */}
+      <div className="sticky top-16 z-10 -mx-4 flex flex-col gap-2 border-b border-subtle bg-bg-2 px-4 py-2.5 md:-mx-6 md:px-6 print:hidden">
+        <FiltrosPendencias
+          key={JSON.stringify(valores)}
+          valores={valores}
+          tarefas={tarefas.map((t) => ({ valor: t.tarPai, rotulo: `${t.tarPai} (${num(t._count._all)})` }))}
+          grupos={opcoesGrupo}
+          planos={Object.entries(FILTRO_PLANO).map(([k, f]) => ({ valor: k, rotulo: f.rotulo }))}
+        />
+        <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-txt">
+          {ativos.length > 0 && (
+            <>
+              <span>Filtros ativos:</span>
+              {ativos.map((a) => (
+                <Link
+                  key={a.rotulo}
+                  href={link(params, a.sem)}
+                  aria-label={`Remover filtro ${a.rotulo}`}
+                  scroll={false}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-pill border border-txt bg-txt px-3.5 text-sm font-semibold text-bg transition-colors hover:border-delp-red-dark hover:bg-delp-red-dark hover:text-white"
+                >
+                  {a.rotulo}
+                  <X size={14} aria-hidden="true" />
                 </Link>
-              </>
-            )}
-            <div className="acoes">
-              <Exportar
-                nome={`pendencias-pagina-${pagina}`}
-                cabecalho={[
-                  "Tarefa",
-                  "Execução",
-                  "OP",
-                  "Estrutura",
-                  "Componente",
-                  "Nome",
-                  "Grupo",
-                  "Plano de corte",
-                  "Usado",
-                  "Unidade",
-                  "Apontado",
-                  "Situação da RA",
-                ]}
-                linhas={exportar}
-              />
-              <Imprimir />
-            </div>
-          </div>
-        </div>
-
-        <section aria-labelledby="t-lista">
-          <div className="section-h">
-            <h2 id="t-lista">Componentes sem apontamento</h2>
-            <p>Agrupados por código de tarefa e execução. Toque na OP ou no código para copiar.</p>
-          </div>
-          {linhas.length === 0 ? (
-            <div className="card vazio">
-              <b>Nenhum componente com esses filtros</b>
-              <span>Mude a busca ou remova um filtro.</span>
-              <Link className="btn sec" href="/pendencias">
+              ))}
+              <Link className={`${buttonVariants.ghost} !px-3.5 !text-[13px]`} href="/pendencias">
                 Limpar
               </Link>
-            </div>
-          ) : (
-            <div className="card tab-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th aria-sort={ordemOp}>
-                      <Link className="ordena" href={link(params, { ordem: ordem === "op-asc" ? "op-desc" : "op-asc", pagina: undefined })} scroll={false}>
-                        OP · estrutura
-                      </Link>
-                    </th>
-                    <th>Componente</th>
-                    <th>Plano de corte</th>
-                    <th className="n" aria-sort={ordemUsado}>
-                      <Link
-                        className="ordena"
-                        href={link(params, { ordem: ordem === "usado-desc" ? "usado-asc" : "usado-desc", pagina: undefined })}
-                        scroll={false}
-                      >
-                        Usado
-                      </Link>
-                    </th>
-                    <th className="n">Apont.</th>
-                  </tr>
-                </thead>
-                {blocos.map((b) => (
-                  <tbody key={`${b.tarPai}|${b.exec}|${b.linhas[0].id}`}>
-                    <tr className="grupo-cab">
-                      <th colSpan={5} scope="rowgroup">
-                        <div>
-                          <b>{b.tarPai}</b>
-                          <b>{b.exec ? `Execução ${b.exec}` : "Sem execução"}</b>
-                          <span>{num(totalGrupo.get(`${b.tarPai}|${b.exec}`) ?? b.linhas.length)} componentes</span>
-                          <Link href={`/tarefa/${encodeURIComponent(b.tarPai)}${b.exec ? `?exec=${encodeURIComponent(b.exec)}` : ""}`}>
-                            Abrir código {b.tarPai} ›
-                          </Link>
-                        </div>
-                      </th>
-                    </tr>
-                    {b.linhas.map((c) => {
-                      const cortes = cortesDa(c.codOrdem, c.cnc);
-                      const naoApontados = cortes.filter((x) => x.st === "pendente" || x.st === "parcial").length;
-                      const ordemCorte = (x: (typeof cortes)[number]) => (x.st === "pendente" || x.st === "parcial" ? 0 : x.st ? 2 : 1);
-                      const celula = (x: (typeof cortes)[number]) => (
-                        <span key={x.plano} className="plano-cel">
-                          <span className="mono">{x.plano}</span>
-                          {x.st ? (
-                            <span className={`tag ${CLASSE_CORTE[x.st]}`}>{ROTULO_CORTE[x.st]}</span>
-                          ) : (
-                            <span className="tag neutro">Fora da aba CNC_PCQ</span>
-                          )}
-                        </span>
-                      );
-                      return (
-                        <tr key={c.id}>
-                          <td>
-                            <Copiar valor={c.codOrdem} tipo="OP" />
-                            <span className="pend-est mono">{c.codEstrutura}</span>
-                          </td>
-                          <td>
-                            <Copiar valor={c.codigoPrd} tipo="Código" />
-                            <span className="pend-grupo">Grupo {c.grupo}</span>
-                            <br />
-                            {c.nome}
-                            {c.situacaoRa && <span className={`item-ra${c.situacaoRa === "RA Pendente" ? " item-ra-pend" : ""}`}>{c.situacaoRa}</span>}
-                          </td>
-                          <td>
-                            {cortes.length === 0 ? (
-                              "–"
-                            ) : cortes.length === 1 ? (
-                              celula(cortes[0])
-                            ) : (
-                              <details className="plano-resumo">
-                                <summary>
-                                  {naoApontados > 0 ? (
-                                    <span className="tag pend">
-                                      {naoApontados} {naoApontados === 1 ? "corte não apontado" : "cortes não apontados"}
-                                    </span>
-                                  ) : (
-                                    <span className="tag ok">Cortes apontados</span>
-                                  )}{" "}
-                                  {cortes.length} planos
-                                </summary>
-                                {[...cortes].sort((x, y) => ordemCorte(x) - ordemCorte(y)).map(celula)}
-                              </details>
-                            )}
-                          </td>
-                          <td className="n">
-                            {num(c.qtdUsada, 3)} {c.unidade}
-                          </td>
-                          <td className="n">{num(c.apontado, 3)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                ))}
-              </table>
-            </div>
+            </>
           )}
-          {paginas > 1 && (
-            <nav className="paginas" aria-label="Páginas">
-              <span>
-                Página {num(pagina)} de {num(paginas)} · {num(POR_PAGINA)} por página
-              </span>
-              <div className="pag-n">
-                {pagina > 1 ? (
-                  <Link className="btn sec" href={link(params, { pagina: String(pagina - 1) })}>
-                    ‹ Anterior
-                  </Link>
-                ) : (
-                  <span className="btn sec" aria-disabled="true">
-                    ‹ Anterior
-                  </span>
-                )}
-                {numerosPagina(pagina, paginas).map((n, i) =>
-                  n === "…" ? (
-                    <span key={`r${i}`}>…</span>
-                  ) : (
-                    <Link key={n} href={link(params, { pagina: n === 1 ? undefined : String(n) })} aria-current={n === pagina ? "page" : undefined}>
-                      {num(n)}
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Exportar
+              nome={`pendencias-pagina-${pagina}`}
+              cabecalho={[
+                "Tarefa",
+                "Execução",
+                "OP",
+                "Estrutura",
+                "Componente",
+                "Nome",
+                "Grupo",
+                "Plano de corte",
+                "Usado",
+                "Unidade",
+                "Apontado",
+                "Situação da RA",
+              ]}
+              linhas={exportar}
+            />
+            <Imprimir />
+          </div>
+        </div>
+      </div>
+
+      <section aria-labelledby="t-lista" className="flex flex-col gap-3">
+        <div>
+          <h2 id="t-lista" className="text-[15px] font-semibold leading-tight text-txt">
+            Componentes sem apontamento
+          </h2>
+          <p className="mt-1 max-w-[70ch] text-xs leading-snug text-txt-2">
+            Agrupados por código de tarefa e execução. Toque na OP ou no código para copiar.
+          </p>
+        </div>
+        {linhas.length === 0 ? (
+          <div className="rounded-card border border-subtle bg-bg shadow-subtle">
+            <EstadoVazio
+              icone={SearchX}
+              titulo="Nenhum componente com esses filtros"
+              descricao="Mude a busca ou remova um filtro."
+              acao={
+                <Link className={buttonVariants.ghost} href="/pendencias">
+                  Limpar
+                </Link>
+              }
+            />
+          </div>
+        ) : (
+          // A tabela rola de lado dentro do próprio bloco (a página não rola de lado no celular).
+          <div className="overflow-x-auto rounded-card border border-subtle bg-bg shadow-subtle print:overflow-visible print:border-0 print:shadow-none">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-med">
+                  <th className={CAB} aria-sort={ordemOp}>
+                    <Link className={ORDENA} href={link(params, { ordem: ordem === "op-asc" ? "op-desc" : "op-asc", pagina: undefined })} scroll={false}>
+                      OP · estrutura{seta(ordemOp)}
                     </Link>
-                  ),
-                )}
-                {pagina < paginas ? (
-                  <Link className="btn sec" href={link(params, { pagina: String(pagina + 1) })}>
-                    Próxima ›
-                  </Link>
-                ) : (
-                  <span className="btn sec" aria-disabled="true">
-                    Próxima ›
+                  </th>
+                  <th className={CAB}>Componente</th>
+                  <th className={CAB}>Plano de corte</th>
+                  <th className={clsx(CAB, "!text-right")} aria-sort={ordemUsado}>
+                    <Link
+                      className={ORDENA}
+                      href={link(params, { ordem: ordem === "usado-desc" ? "usado-asc" : "usado-desc", pagina: undefined })}
+                      scroll={false}
+                    >
+                      Usado{seta(ordemUsado)}
+                    </Link>
+                  </th>
+                  <th className={clsx(CAB, "!text-right")}>Apont.</th>
+                </tr>
+              </thead>
+              {blocos.map((b) => (
+                <tbody key={`${b.tarPai}|${b.exec}|${b.linhas[0].id}`}>
+                  <tr className="border-b border-subtle bg-bg-2">
+                    <th colSpan={5} scope="rowgroup" className="px-4 py-1 text-left font-normal">
+                      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-txt">
+                        <b className="font-mono font-bold">{b.tarPai}</b>
+                        <b className="font-semibold">{b.exec ? `Execução ${b.exec}` : "Sem execução"}</b>
+                        <span className="text-sm text-txt-2">
+                          <span className="font-mono">{num(totalGrupo.get(`${b.tarPai}|${b.exec}`) ?? b.linhas.length)}</span> componentes
+                        </span>
+                        <Link
+                          className="ml-auto inline-flex min-h-11 items-center text-sm font-semibold text-txt underline underline-offset-2 hover:text-delp-red"
+                          href={`/tarefa/${encodeURIComponent(b.tarPai)}${b.exec ? `?exec=${encodeURIComponent(b.exec)}` : ""}`}
+                        >
+                          Abrir código {b.tarPai} ›
+                        </Link>
+                      </div>
+                    </th>
+                  </tr>
+                  {b.linhas.map((c) => {
+                    const cortes = cortesDa(c.codOrdem, c.cnc);
+                    const naoApontados = cortes.filter((x) => x.st === "pendente" || x.st === "parcial").length;
+                    const ordemCorte = (x: (typeof cortes)[number]) => (x.st === "pendente" || x.st === "parcial" ? 0 : x.st ? 2 : 1);
+                    const celula = (x: (typeof cortes)[number]) => (
+                      <span key={x.plano} className="flex flex-wrap items-center gap-2 whitespace-nowrap font-semibold [&+&]:mt-1.5">
+                        <span className="font-mono text-sm">{x.plano}</span>
+                        {seloCorte(x.st)}
+                      </span>
+                    );
+                    return (
+                      <tr key={c.id} className="border-b border-subtle align-top">
+                        <td className="px-3.5 py-1.5">
+                          <Copiar valor={c.codOrdem} tipo="OP" />
+                          <span className="block font-mono text-sm text-txt-2">{c.codEstrutura}</span>
+                        </td>
+                        <td className="px-3.5 py-1.5 leading-snug text-txt">
+                          <Copiar valor={c.codigoPrd} tipo="Código" />
+                          <span className="ml-2 text-sm text-txt-2">Grupo {c.grupo}</span>
+                          <span className="block">{c.nome}</span>
+                          {c.situacaoRa && (
+                            <span className={clsx("block text-[13px] font-semibold", c.situacaoRa === "RA Pendente" ? "text-delp-red" : "text-txt-2")}>
+                              {c.situacaoRa}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3.5 py-1.5">
+                          {cortes.length === 0 ? (
+                            "–"
+                          ) : cortes.length === 1 ? (
+                            celula(cortes[0])
+                          ) : (
+                            <details>
+                              <summary className="inline-flex min-h-11 cursor-pointer flex-wrap items-center gap-1.5 rounded-btn border border-med px-2.5 py-1 text-sm font-semibold text-txt [&::-webkit-details-marker]:hidden">
+                                {naoApontados > 0 ? (
+                                  <Badge tone="danger">
+                                    {naoApontados} {naoApontados === 1 ? "corte não apontado" : "cortes não apontados"}
+                                  </Badge>
+                                ) : (
+                                  <Badge tone="success">Cortes apontados</Badge>
+                                )}{" "}
+                                <span className="font-mono">{cortes.length}</span> planos
+                              </summary>
+                              <div className="pt-2">{[...cortes].sort((x, y) => ordemCorte(x) - ordemCorte(y)).map(celula)}</div>
+                            </details>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3.5 py-1.5 text-right font-mono text-sm">
+                          {num(c.qtdUsada, 3)} {c.unidade}
+                        </td>
+                        <td className="whitespace-nowrap px-3.5 py-1.5 text-right font-mono text-sm">{num(c.apontado, 3)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          </div>
+        )}
+        {paginas > 1 && (
+          <nav className="flex flex-wrap items-center justify-between gap-2.5 text-sm text-txt-2 print:hidden" aria-label="Páginas">
+            <span>
+              Página <span className="font-mono">{num(pagina)}</span> de <span className="font-mono">{num(paginas)}</span> ·{" "}
+              <span className="font-mono">{num(POR_PAGINA)}</span> por página
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {pagina > 1 ? (
+                <Link className={BOTAO_PAG} href={link(params, { pagina: String(pagina - 1) })}>
+                  <ChevronLeft size={15} aria-hidden="true" />
+                  Anterior
+                </Link>
+              ) : (
+                <span className={`${BOTAO_PAG} pointer-events-none opacity-45`} aria-disabled="true">
+                  <ChevronLeft size={15} aria-hidden="true" />
+                  Anterior
+                </span>
+              )}
+              {numerosPagina(pagina, paginas).map((n, i) =>
+                n === "…" ? (
+                  <span key={`r${i}`} className="px-1">
+                    …
                   </span>
-                )}
-              </div>
-            </nav>
-          )}
-        </section>
-      </div></div>
-    </>
+                ) : (
+                  <Link
+                    key={n}
+                    href={link(params, { pagina: n === 1 ? undefined : String(n) })}
+                    aria-current={n === pagina ? "page" : undefined}
+                    className={clsx(
+                      "inline-flex min-h-11 min-w-11 items-center justify-center rounded-btn border px-2.5 font-mono text-[13px] font-semibold",
+                      n === pagina ? "border-txt bg-txt text-bg" : "border-med bg-bg text-txt hover:border-txt-muted",
+                    )}
+                  >
+                    {num(n)}
+                  </Link>
+                ),
+              )}
+              {pagina < paginas ? (
+                <Link className={BOTAO_PAG} href={link(params, { pagina: String(pagina + 1) })}>
+                  Próxima
+                  <ChevronRight size={15} aria-hidden="true" />
+                </Link>
+              ) : (
+                <span className={`${BOTAO_PAG} pointer-events-none opacity-45`} aria-disabled="true">
+                  Próxima
+                  <ChevronRight size={15} aria-hidden="true" />
+                </span>
+              )}
+            </div>
+          </nav>
+        )}
+      </section>
+    </div>
   );
 }
