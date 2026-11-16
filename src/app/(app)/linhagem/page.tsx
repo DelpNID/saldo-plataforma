@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Avanco } from "@/components/Etiquetas";
 import { Linhagem, type DesenhoLinhagem } from "@/components/Linhagem";
-import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num } from "@/lib/formato";
 import { agregarOrigens, compararCodigo, descricaoCurta, situacaoTarefa, tituloOrigem, type GrupoOrigem } from "@/lib/regras";
@@ -15,15 +14,14 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
   if (!carga) {
     return (
       <>
-        <Topo ativo="linhagem" />
-        <main className="in">
+        <div className="legado"><div className="in pagina">
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
             <Link className="btn sec" href="/importar">
               Ir para Atualizar
             </Link>
           </div>
-        </main>
+        </div></div>
       </>
     );
   }
@@ -84,8 +82,7 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
 
   return (
     <>
-      <Topo ativo="linhagem" />
-      <main className="in">
+      <div className="legado"><div className="in pagina">
         <div className="cab-pagina">
           <span className="kicker">Projeto › desenho › código de tarefa › tarefas filhas</span>
           <div className="titulo">
@@ -118,8 +115,7 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
             </span>
           </div>
         </Linhagem>
-      </main>
-      <Rodape arquivo={carga.arquivo} />
+      </div></div>
     </>
   );
 }

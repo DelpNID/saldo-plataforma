@@ -70,7 +70,7 @@
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
   .in{width:100%;max-width:var(--delp-largura);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-  main.in{display:flex;flex-direction:column;gap:18px;padding-block:16px 32px}
+  .in.pagina{display:flex;flex-direction:column;gap:18px;padding-block:16px 32px}
   section{display:flex;flex-direction:column;gap:12px;min-width:0}
 
   /* ---------- 3. COMPONENTES MANTIDOS (mesmo nome de classe) ---------- */
@@ -243,7 +243,7 @@
   .cab-pagina .titulo{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
   .cab-pagina .resumo{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
   /* bloco que fica parado ao rolar */
-  .fixo{position:sticky;top:0;z-index:3;background:var(--delp-neutro-claro);padding-block:6px 8px;display:flex;flex-direction:column;gap:8px}
+  .fixo{position:sticky;top:4rem;z-index:3;background:var(--delp-neutro-claro);padding-block:6px 8px;display:flex;flex-direction:column;gap:8px}
   .fixo.com-borda{border-bottom:1px solid var(--delp-neutro-medio)}
   /* cabeçalho que ordena */
   .ordena{min-height:var(--delp-toque);padding:0;border:0;background:none;cursor:pointer;text-align:left;font-size:var(--delp-rotulo);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--delp-texto-apoio)}
@@ -381,7 +381,7 @@
 
   /* Painel: a página inteira rola (pedido em 15/11: sem caixa com rolagem própria).
      Título, filtros e cabeçalho da lista ficam parados no topo enquanto a lista passa. */
-  .lista-sec .lista-cab{position:sticky;top:var(--fixo-h,0px);z-index:2}
+  .lista-sec .lista-cab{position:sticky;top:calc(4rem + var(--fixo-h,0px));z-index:2}
 
   /* Um pouco menor para ver mais na tela (pedido em 15/11). Botões e campos mantêm 44 px de toque. */
   h1{font-size:26px}

@@ -4,7 +4,6 @@ import type { Prisma } from "@prisma/client";
 import { Copiar, Exportar, Imprimir, type Celula } from "@/components/Acoes";
 import { CLASSE_CORTE } from "@/components/Arvore";
 import { FiltrosPendencias, type ValoresFiltro } from "@/components/FiltrosPendencias";
-import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num } from "@/lib/formato";
 import { ROTULO_CORTE, compararCodigo, planosDaColuna, statusCorte, type StatusCorte } from "@/lib/regras";
@@ -61,15 +60,14 @@ export default async function Pendencias({ searchParams }: Props) {
   if (!carga) {
     return (
       <>
-        <Topo ativo="pendencias" />
-        <main className="in">
+        <div className="legado"><div className="in pagina">
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
             <Link className="btn sec" href="/importar">
               Ir para Atualizar
             </Link>
           </div>
-        </main>
+        </div></div>
       </>
     );
   }
@@ -181,8 +179,7 @@ export default async function Pendencias({ searchParams }: Props) {
 
   return (
     <>
-      <Topo ativo="pendencias" />
-      <main className="in">
+      <div className="legado"><div className="in pagina">
         <div className="cab-pagina">
           <span className="kicker">Coluna APONTADO = 0 na aba Componentes</span>
           <div className="titulo">
@@ -388,8 +385,7 @@ export default async function Pendencias({ searchParams }: Props) {
             </nav>
           )}
         </section>
-      </main>
-      <Rodape arquivo={carga.arquivo} />
+      </div></div>
     </>
   );
 }

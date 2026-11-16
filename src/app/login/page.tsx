@@ -7,6 +7,8 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
   const semConfig = !configurado || searchParams.erro === "config";
   const senhaErrada = !semConfig && Boolean(searchParams.erro);
   return (
+    // Provisório até a Tarefa 11 (Login no padrão do Visto): o CSS antigo vale só dentro de .legado.
+    <div className="legado">
     <div className="login-wrap">
       <form className="card login" action="/api/login" method="post">
         <span className="logo-fb">
@@ -43,6 +45,7 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
         <input type="hidden" name="volta" value={searchParams.volta ?? ""} />
         <button className="btn" type="submit">Entrar</button>
       </form>
+    </div>
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { Copiar, type Celula } from "@/components/Acoes";
 import { CabecalhoArvore, NoEstrutura, OpsDaEstrutura, chaveCorte, type Cortes } from "@/components/Arvore";
 import { ControlesTarefa, TrocaCodigo } from "@/components/ControlesTarefa";
 import { Avanco, Comparacao, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
-import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { avancoDe } from "@/lib/kpis";
 import { num, pct } from "@/lib/formato";
@@ -201,9 +200,8 @@ export default async function TarefaPage({ params, searchParams }: Props) {
         };
 
   return (
-    <>
+    <div className="legado">
       <div className="fixo com-borda topo-fixo">
-        <Topo ativo="tarefa" />
         <div className="in cab-pagina compacto">
           <span className="kicker">
             {cod === RETRABALHO ? "Fora dos códigos de tarefa" : `Código de tarefa ${cod}`}
@@ -219,7 +217,7 @@ export default async function TarefaPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <main className="in">
+      <div className="in pagina">
         <TrocaCodigo anterior={anterior} proximo={proximo} codigos={[...codigos, RETRABALHO]} />
 
         <section aria-label="Resumo do código de tarefa">
@@ -462,8 +460,7 @@ export default async function TarefaPage({ params, searchParams }: Props) {
             </div>
           </div>
         </section>
-      </main>
-      <Rodape arquivo={carga.arquivo} />
-    </>
+      </div>
+    </div>
   );
 }

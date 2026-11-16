@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Importador } from "@/components/Importador";
-import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva } from "@/lib/db";
 import { quando } from "@/lib/formato";
 
@@ -12,8 +11,7 @@ export default async function Importar() {
   const habilitada = Boolean(process.env.IMPORTACAO_SENHA);
   return (
     <>
-      <Topo ativo="importar" />
-      <main className="in">
+      <div className="legado"><div className="in pagina">
         <div className="cab-pagina">
           <span className="kicker">Atualizar dados</span>
           <div className="titulo">
@@ -27,8 +25,7 @@ export default async function Importar() {
           )}
         </div>
         <Importador habilitada={habilitada} />
-      </main>
-      <Rodape arquivo={carga?.arquivo} />
+      </div></div>
     </>
   );
 }

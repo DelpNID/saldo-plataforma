@@ -4,7 +4,7 @@ import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
 import { Comparacao, EtiquetaSituacao, TextoRitmo } from "@/components/Etiquetas";
 import { cargaAtiva, prisma } from "@/lib/db";
-import { dataCurta, num, pct, quando } from "@/lib/formato";
+import { dataCurta, num, pct } from "@/lib/formato";
 import { atrasoQtd, avancoDe, fabricDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
 import { compararCodigo, descricaoCurta, grupoTarefa } from "@/lib/regras";
 
@@ -41,12 +41,12 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
   const carga = await cargaAtiva();
   if (!carga) {
     return (
-      <div className="g-pagina">
-        <main className="g-main">
+      <div className="legado">
+        <div className="g-main">
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -127,33 +127,8 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
   ];
 
   return (
-    <div className="g-pagina">
-      <header className="g-topo">
-        <div className="g-topo-in">
-          <Link href="/gestao" className="g-marca" aria-label="Gestão do saldo, início">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/delp-logo.png" alt="" width={28} height={24} />
-            <span>
-              <b>Gestão do saldo</b>
-              <small>
-                {carga.projeto} · atualizado {quando(carga.criadaEm)}
-              </small>
-            </span>
-          </Link>
-          <nav className="g-acoes" aria-label="Opções">
-            <Link className="g-link" href="/">
-              Plataforma
-            </Link>
-            <form action="/api/sair" method="post">
-              <button className="btn-sair" type="submit">
-                Sair
-              </button>
-            </form>
-          </nav>
-        </div>
-      </header>
-
-      <main className="g-main">
+    <div className="legado">
+      <div className="g-main">
         <BuscaGestao
           comFabric={carga.comFabric}
           inicial={(searchParams.q ?? "").slice(0, 80)}
@@ -344,7 +319,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         <p className="nota g-fonte">
           Fonte: {carga.arquivo} · centro de custo {carga.centroCusto}. <Link href="/">Abrir a plataforma completa</Link>
         </p>
-      </main>
+      </div>
     </div>
   );
 }

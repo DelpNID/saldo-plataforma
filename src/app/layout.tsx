@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { IniciarTema } from "@/components/layout/IniciarTema";
+import { SCRIPT_TEMA } from "@/lib/tema-script";
 // Fontes servidas pelo próprio app (sem chamada a terceiros no navegador), só nos pesos usados — como no Visto.
 import "@fontsource/barlow/400.css";
 import "@fontsource/barlow/500.css";
@@ -33,10 +35,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    // suppressHydrationWarning: o script do <head> põe o data-tema antes do React chegar.
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Tema antes da primeira pintura (sem o lampejo branco para quem escolheu o escuro). */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body>
-        {/* Provisório (Tarefa 1): todas as telas ainda são antigas. A Tarefa 4 leva este invólucro para dentro de cada tela. */}
-        <div className="legado min-h-screen">{children}</div>
+        <IniciarTema />
+        {children}
       </body>
     </html>
   );

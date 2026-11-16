@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Rodape, Topo } from "@/components/Topo";
 import { Comparacao } from "@/components/Etiquetas";
 import { ListaTarefas, type TarefaResumo } from "@/components/ListaTarefas";
 import { cargaAtiva, prisma } from "@/lib/db";
@@ -13,8 +12,7 @@ export default async function Painel() {
   if (!carga) {
     return (
       <>
-        <Topo ativo="painel" />
-        <main className="in">
+        <div className="legado"><div className="in pagina">
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
             <span>Importe a planilha de saldo em Atualizar para os dados aparecerem aqui.</span>
@@ -22,7 +20,7 @@ export default async function Painel() {
               Ir para Atualizar
             </Link>
           </div>
-        </main>
+        </div></div>
       </>
     );
   }
@@ -59,8 +57,7 @@ export default async function Painel() {
 
   return (
     <>
-      <Topo ativo="painel" />
-      <main className="in">
+      <div className="legado"><div className="in pagina">
         <Link className="so-celular" href="/gestao">
           <span>Está no celular? Abra a Gestão, feita para a tela pequena.</span>
           <span aria-hidden="true">›</span>
@@ -116,8 +113,7 @@ export default async function Painel() {
             </p>
           )}
         </ListaTarefas>
-      </main>
-      <Rodape arquivo={carga.arquivo} />
+      </div></div>
     </>
   );
 }
