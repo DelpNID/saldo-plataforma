@@ -545,3 +545,8 @@ a.filtro-ativo:hover{color:var(--delp-branco);background:var(--delp-vermelho);bo
 .item-ra{display:inline-block;font-size:13px;font-weight:600;color:var(--delp-texto-apoio)}
 .item-ra-pend{color:var(--delp-vermelho)}
 td .item-ra{display:block;margin-top:2px}
+/* Linhagem no celular: a coluna do avanço desce para baixo do código (no computador fica como antes) */
+@media (max-width:699px){
+  .lin-cod{grid-template-columns:minmax(0,1fr) auto 12px}
+  .lin-cod .avanco{grid-column:1/-1;grid-row:2}
+}
