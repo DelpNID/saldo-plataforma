@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow } from "next/font/google";
+// Fontes servidas pelo próprio app (sem chamada a terceiros no navegador), só nos pesos usados — como no Visto.
+import "@fontsource/barlow/400.css";
+import "@fontsource/barlow/500.css";
+import "@fontsource/barlow/600.css";
+import "@fontsource/barlow/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource/jetbrains-mono/600.css";
 import "./globals.css";
-
-const barlow = Barlow({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-barlow",
-});
+// CSS antigo, preso em .legado enquanto as telas migram para o padrão do Visto.
+import "./legado.css";
 
 export const metadata: Metadata = {
   title: { default: "Subida de Saldo · Delp", template: "%s · Subida de Saldo" },
@@ -22,8 +24,11 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={barlow.variable}>
-      <body>{children}</body>
+    <html lang="pt-BR">
+      <body>
+        {/* Provisório (Tarefa 1): todas as telas ainda são antigas. A Tarefa 4 leva este invólucro para dentro de cada tela. */}
+        <div className="legado min-h-screen">{children}</div>
+      </body>
     </html>
   );
 }
