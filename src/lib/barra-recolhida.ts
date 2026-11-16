@@ -1,7 +1,8 @@
 // Origem: delp-visto@f66a6c3 src/lib/barra-recolhida.ts
-// Desvios: chave 'ascent.barra-recolhida'; useBarraRecolhida começa em false e lê
-//   a escolha no efeito, pelo mesmo motivo do tema (renderização no servidor). Quem
-//   recolheu a barra a vê abrir e fechar uma vez ao carregar a página.
+// Desvios: chave 'ascent.barra-recolhida'; a escolha vai TAMBÉM num cookie com o
+//   mesmo nome, que o layout do servidor lê (recolhidaPeloCookie) e passa como estado
+//   inicial do useBarraRecolhida(inicial) — assim a barra já sai do servidor do jeito
+//   certo, sem o salto de 192px a cada carregamento (revisão final, 16/11).
 //   Ver docs/visto-desvios.md.
 // -----------------------------------------------------------------------------
 // barra-recolhida.ts — a barra lateral está recolhida?
@@ -20,8 +21,19 @@
 // barra a cada aba nova.
 // -----------------------------------------------------------------------------
 import { useEffect, useState } from 'react';
+import { COOKIE_BARRA, cookieDaBarra } from './barra-cookie';
 
-const CHAVE = 'ascent.barra-recolhida';
+export { COOKIE_BARRA, cookieDaBarra, recolhidaPeloCookie } from './barra-cookie';
+
+const CHAVE = COOKIE_BARRA;
+
+function gravarCookie(valor: boolean): void {
+  try {
+    document.cookie = cookieDaBarra(valor);
+  } catch {
+    // Sem cookie, o servidor desenha a barra aberta e o efeito corrige.
+  }
+}
 
 function lerSalvo(): boolean {
   try {
@@ -44,6 +56,7 @@ export function definirBarraRecolhida(valor: boolean): void {
   } catch {
     // Sem storage a escolha vale só para esta sessão.
   }
+  gravarCookie(recolhida);
   ouvintes.forEach((avisar) => avisar(recolhida));
 }
 
@@ -51,13 +64,15 @@ export function alternarBarraRecolhida(): void {
   definirBarraRecolhida(!recolhida);
 }
 
-export function useBarraRecolhida(): boolean {
-  // Ascent: começa aberta e lê a escolha no efeito (ver o cabeçalho do arquivo).
-  const [valor, setValor] = useState(false);
+export function useBarraRecolhida(inicial = false): boolean {
+  // Ascent: começa no valor que o servidor leu do cookie (ver o cabeçalho do arquivo).
+  const [valor, setValor] = useState(inicial);
   useEffect(() => {
     // Reassume o valor atual na montagem: outra moldura pode ter alternado
     // antes desta aparecer (troca de perfil, drawer do mobile).
     setValor(recolhida);
+    // Quem recolheu antes do cookie existir (só localStorage) passa a tê-lo.
+    gravarCookie(recolhida);
     ouvintes.add(setValor);
     return () => {
       ouvintes.delete(setValor);

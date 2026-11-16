@@ -24,7 +24,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
+  // Sem viewportFit "cover": o navegador mantém o conteúdo fora do entalhe e do indicador de início do iPhone
+  // (o CSS antigo compensava com env(safe-area-inset-*), que saiu com o legado). Revisão final, 16/11.
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#1E1E1E" },
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },

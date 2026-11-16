@@ -262,13 +262,13 @@ export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, ab
               <div
                 key={d.desenho}
                 className={clsx(
-                  "relative grid grid-cols-1 items-center gap-6 pl-6 shell:grid-cols-[minmax(0,230px)_minmax(0,1fr)]",
+                  "relative grid grid-cols-1 items-center gap-6 pl-6 duascol:grid-cols-[minmax(0,230px)_minmax(0,1fr)]",
                   FIO,
                   "before:-top-3.5 before:bottom-0 before:left-0 before:w-0.5 last:before:bottom-1/2",
                   "after:left-0 after:top-[calc(50%-1px)] after:h-0.5 after:w-6",
                 )}
               >
-                <div className="relative flex flex-col rounded-card border border-med bg-bg-2 px-3.5 py-2.5 leading-tight shell:after:absolute shell:after:left-full shell:after:top-[calc(50%-1px)] shell:after:h-0.5 shell:after:w-6 shell:after:bg-border-med">
+                <div className="relative flex flex-col rounded-card border border-med bg-bg-2 px-3.5 py-2.5 leading-tight duascol:after:absolute duascol:after:left-full duascol:after:top-[calc(50%-1px)] duascol:after:h-0.5 duascol:after:w-6 duascol:after:bg-border-med">
                   <span className={ROTULO}>Desenho</span>
                   <b className="font-mono font-bold text-txt">{d.desenho}</b>
                   <small className="text-sm text-txt-2">
@@ -290,14 +290,14 @@ export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, ab
                       >
                         <Link
                           href={`/tarefa/${encodeURIComponent(t.cod)}`}
-                          className="group grid min-h-16 grid-cols-[minmax(0,1fr)_auto_12px] items-center gap-x-3 gap-y-1.5 rounded-card border border-subtle bg-bg px-3.5 py-2.5 text-txt shadow-subtle transition-colors hover:border-txt-muted shell:grid-cols-[minmax(0,1fr)_auto_minmax(180px,220px)_12px]"
+                          className="group grid min-h-16 grid-cols-[minmax(0,1fr)_auto_12px] items-center gap-x-3 gap-y-1.5 rounded-card border border-subtle bg-bg px-3.5 py-2.5 text-txt shadow-subtle transition-colors hover:border-txt-muted duascol:grid-cols-[minmax(0,1fr)_auto_minmax(180px,220px)_12px]"
                         >
                           <span className="grid min-w-0 grid-cols-[46px_minmax(0,1fr)] items-baseline gap-x-2 leading-tight">
                             <b className="font-mono font-bold">{t.cod}</b>
                             <span className="break-words font-semibold">{t.descricao}</span>
                           </span>
                           <EtiquetaSituacao avanco={t.avanco} />
-                          <span className="col-span-full row-start-2 shell:col-span-1 shell:row-start-auto">
+                          <span className="col-span-full row-start-2 duascol:col-span-1 duascol:row-start-auto">
                             <Avanco valor={t.avanco} fabric={t.fabric} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
                           </span>
                           <ChevronRight size={14} aria-hidden="true" className="text-border-med group-hover:text-delp-red" />

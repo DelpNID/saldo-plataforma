@@ -298,7 +298,7 @@ export default async function TarefaPage({ params, searchParams }: Props) {
             {origens.map((o, i) => {
               const linkavel = o.tipo === "outra" || (o.tipo === "retrabalho" && cod !== RETRABALHO);
               const classe = clsx(
-                "grid min-h-[52px] grid-cols-2 items-center gap-x-3.5 gap-y-1.5 px-4 py-2 text-txt shell:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.2fr)_14px]",
+                "grid min-h-[52px] grid-cols-2 items-center gap-x-3.5 gap-y-1.5 px-4 py-2 text-txt duascol:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.2fr)_14px]",
                 linkavel && "group transition-colors hover:bg-bg-2",
                 i > 0 && "border-t border-subtle",
               );
@@ -309,15 +309,15 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                     <span className="block text-sm text-txt-2">{descOrigem(o)}</span>
                   </span>
                   <Avanco valor={o.previsto > 0 ? o.realizado / o.previsto : 0} rotulo={`${num(o.realizado, 1)} de ${num(o.previsto, 1)}`} />
-                  <span className="col-span-2 text-sm text-txt shell:col-span-1">
+                  <span className="col-span-2 text-sm text-txt duascol:col-span-1">
                     <span className="font-mono">{num(o.componentes)}</span> componentes ·{" "}
                     <span className="font-mono">{num(o.pendentes)}</span> pendentes de baixa
                     {avancoFilha.has(o.tarFilho) ? ` · tarefa ${o.tarFilho} com ${pct(avancoFilha.get(o.tarFilho) ?? 0)}` : ""}
                   </span>
                   {linkavel ? (
-                    <ChevronRight size={16} aria-hidden="true" className="hidden text-border-med group-hover:text-delp-red shell:block" />
+                    <ChevronRight size={16} aria-hidden="true" className="hidden text-border-med group-hover:text-delp-red duascol:block" />
                   ) : (
-                    <span className="hidden shell:block" />
+                    <span className="hidden duascol:block" />
                   )}
                 </>
               );

@@ -22,16 +22,19 @@ export function AppShell({
   projetos,
   selos,
   arquivo,
+  barraRecolhida: recolhidaInicial = false,
   children,
 }: {
   projetos: ProjetoOpcao[];
   selos: Partial<Record<string, number>>;
   arquivo: string | null;
+  /** O estado da barra lido do cookie no servidor (primeira pintura certa). */
+  barraRecolhida?: boolean;
   children: ReactNode;
 }) {
   // Drawer da sidebar no mobile (no desktop ela é fixa e este estado é ignorado).
   const [menuAberto, setMenuAberto] = useState(false);
-  const barraRecolhida = useBarraRecolhida();
+  const barraRecolhida = useBarraRecolhida(recolhidaInicial);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const conteudoRef = useRef<HTMLDivElement>(null);
   const estavaAberto = useRef(false);
@@ -81,7 +84,7 @@ export function AppShell({
         <div className="fixed inset-0 z-30 bg-black/40 shell:hidden" onClick={fecharMenu} aria-hidden="true" />
       )}
 
-      <Sidebar open={menuAberto} onClose={fecharMenu} selos={selos} />
+      <Sidebar open={menuAberto} onClose={fecharMenu} selos={selos} recolhidaInicial={recolhidaInicial} />
 
       {/* Conteúdo: no desktop, deslocado para dar lugar à sidebar fixa — 264px
           com a barra aberta, 72px com ela recolhida. */}

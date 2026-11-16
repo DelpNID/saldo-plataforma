@@ -12,7 +12,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { TileIndicador } from "@/components/ui/TileIndicador";
 import { COR_ASCENT, SELO_TOM, TOM_DA_CLASSE } from "@/lib/cores";
 import { cargaAtiva, prisma } from "@/lib/db";
-import { dataCurta, num, pct } from "@/lib/formato";
+import { dataCurta, num, pct, quando } from "@/lib/formato";
 import { atrasoQtd, avancoDe, fabricDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
 import { compararCodigo, descricaoCurta, grupoTarefa } from "@/lib/regras";
 
@@ -184,8 +184,9 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           .sort((a, b) => compararCodigo(a.cod, b.cod))}
       />
 
-      {/* Faixa de indicadores do Dashboard do Visto (variante fluida: os cards ocupam a largura que houver). */}
-      <section aria-label="Indicadores" className="grade-indicadores fluida">
+      {/* O indicador principal em linha própria (como era antes): a comparação Saldo × Fabricação precisa
+          de largura, e na faixa fluida (base de 152px) a barra sumia. Revisão final, 16/11. */}
+      <section aria-label="Avanço do saldo">
         <TileIndicador
           variante="painel"
           rotulo={`${fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"} · ${carga.projeto}`}
@@ -205,7 +206,15 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
               Em 7 dias: <VariacaoNaLinha v={variacao((avanco - avancoDe(semana)) * 100, "pp", true, dataCurta(semana.dataRef).slice(0, 5))} />
             </p>
           )}
+          {/* No celular a data da carga não cabe no seletor do topo: fica aqui, onde o gestor olha primeiro. */}
+          <p className="mt-1 text-xs text-txt-2">
+            Atualizado em <span className="font-mono">{quando(carga.criadaEm)}</span>
+          </p>
         </TileIndicador>
+      </section>
+
+      {/* Faixa de indicadores do Dashboard do Visto (variante fluida: os cards ocupam a largura que houver). */}
+      <section aria-label="Indicadores" className="grade-indicadores fluida">
         <TileIndicador
           variante="painel"
           rotulo="Pendentes de baixa"

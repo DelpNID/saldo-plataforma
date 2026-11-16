@@ -12,8 +12,10 @@ export const metadata: Metadata = { title: "Entrar" };
 // Uma cena só (sem carrossel): public/images/cena-ascent.svg, na linguagem das cenas do Visto.
 
 // Origem: delp-visto@f66a6c3 LoginPage.tsx (CLASSE_BOTAO_ENTRAR)
+// Desvio: bg-grad-delp (fixo) no lugar de bg-delp-red — no tema escuro o --delp-red clareia e o
+// branco por cima cai para ~3:1 (abaixo do AA). Revisão final, 16/11.
 const CLASSE_BOTAO_ENTRAR =
-  "flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-delp-red text-lg font-semibold text-white shadow-[0_8px_18px_-10px_rgba(204,15,16,0.55)] transition-colors hover:bg-delp-red-dark disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none";
+  "flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-grad-delp text-lg font-semibold text-white shadow-[0_8px_18px_-10px_rgba(204,15,16,0.55)] transition-[filter] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none";
 const ERRO = "flex items-start gap-1.5 text-sm font-semibold text-delp-red";
 
 export const dynamic = "force-dynamic"; // a saudação segue o relógio

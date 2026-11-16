@@ -31,14 +31,16 @@ export function Sidebar({
   open,
   onClose,
   selos,
+  recolhidaInicial = false,
 }: {
   open: boolean;
   onClose: () => void;
   selos: Partial<Record<string, number>>;
+  recolhidaInicial?: boolean;
 }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-  const recolhida = useBarraRecolhida();
+  const recolhida = useBarraRecolhida(recolhidaInicial);
 
   // Acessibilidade do drawer: ao abrir, o foco do teclado vai para o primeiro
   // item do menu (o retorno do foco ao fechar é responsabilidade do AppShell).

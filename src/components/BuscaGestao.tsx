@@ -10,8 +10,8 @@ import { num, pct } from "@/lib/formato";
 import { buscarCodigos, resumirSelecao, type CodigoBusca } from "@/lib/kpis";
 
 const MAX_LISTA = 30;
-/** Rótulo micro-caps (régua do Visto). */
-const ROTULO = "text-[11px] font-bold uppercase tracking-[0.1em] text-txt-muted";
+/** Rótulo micro-caps (régua do Visto), em txt-2: o muted fica abaixo do AA sobre o bg-2 dos quadros. */
+const ROTULO = "text-[11px] font-bold uppercase tracking-[0.1em] text-txt-2";
 
 /** "Como está o avanço de…": filtra por desenho, código de tarefa ou descrição do equipamento e soma o recorte. */
 export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codigos: CodigoBusca[]; inicial?: string; comFabric?: boolean }) {

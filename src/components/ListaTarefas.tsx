@@ -51,8 +51,8 @@ const VALOR: Record<Exclude<Coluna, "codigo">, (t: TarefaResumo) => number> = {
   pendMaterial: (t) => t.pendMaterial,
 };
 
-/** As colunas da lista a partir de `shell:`; abaixo, cada linha vira um cartão de três colunas. */
-const GRADE = "shell:grid-cols-[minmax(0,1.5fr)_128px_minmax(0,1fr)_92px_92px_128px_14px]";
+/** As colunas da lista a partir de `duascol:`; abaixo, cada linha vira um cartão de três colunas. */
+const GRADE = "duascol:grid-cols-[minmax(0,1.5fr)_128px_minmax(0,1fr)_92px_92px_128px_14px]";
 /** Cabeçalho de coluna na régua do Visto: cinza, nunca vermelho. */
 const CABECALHO = "text-[11px] font-semibold uppercase tracking-[0.1em] text-txt-muted";
 
@@ -182,7 +182,7 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
       {/* Cabeçalho de coluna: para logo abaixo da faixa (a altura dela é medida em --fixo-h). */}
       <div
         className={clsx(
-          "sticky z-[5] hidden items-center gap-3 border-b border-med bg-bg px-4 shell:grid print:static",
+          "sticky z-[5] hidden items-center gap-3 border-b border-med bg-bg px-4 duascol:grid print:static",
           GRADE,
         )}
         style={{ top: "calc(4rem + var(--fixo-h, 0px))" }}
@@ -226,7 +226,7 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
                   GRADE,
                 )}
               >
-                <span className="col-span-2 flex min-w-0 flex-col leading-tight shell:col-span-1">
+                <span className="col-span-2 flex min-w-0 flex-col leading-tight duascol:col-span-1">
                   <b className="font-mono text-[15px] font-bold">{t.cod}</b>
                   <span className="break-words text-sm font-semibold">{t.descricao}</span>
                   <span className="font-mono text-xs text-txt-2">{t.desenho}</span>
@@ -234,7 +234,7 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
                 <span>
                   <EtiquetaSituacao avanco={t.avanco} />
                 </span>
-                <span className="col-span-3 shell:col-span-1">
+                <span className="col-span-3 duascol:col-span-1">
                   <Avanco valor={t.avanco} fabric={t.fabric} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
                 </span>
                 <Numero valor={num(t.execucoes)} apoio={`${num(t.execPend, 1)} pendentes`} rotulo="Execuções" />
@@ -243,7 +243,7 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
                 <ChevronRight
                   size={16}
                   aria-hidden="true"
-                  className="hidden text-border-med transition-colors group-hover:text-delp-red shell:block"
+                  className="hidden text-border-med transition-colors group-hover:text-delp-red duascol:block"
                 />
               </Link>
             </li>
@@ -258,11 +258,11 @@ export function ListaTarefas({ tarefas, nota }: { tarefas: TarefaResumo[]; nota?
   );
 }
 
-/** Um número da linha; abaixo de `shell:` (sem cabeçalho de coluna) ele leva o rótulo escrito. */
+/** Um número da linha; abaixo de `duascol:` (sem cabeçalho de coluna) ele leva o rótulo escrito. */
 function Numero({ valor, apoio, rotulo }: { valor: string; apoio: string; rotulo: string }) {
   return (
     <span className="flex flex-col leading-tight">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-txt-2 shell:hidden">{rotulo}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-txt-2 duascol:hidden">{rotulo}</span>
       <b className="font-mono text-[15px] font-bold">{valor}</b>
       <small className="text-xs text-txt-2">{apoio}</small>
     </span>

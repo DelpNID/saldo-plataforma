@@ -21,7 +21,7 @@ Nada aqui foi aplicado no Visto.
 | `"use client"` em `Card`, `Painel`, `TileIndicador`, `Segmentado` e `folha.ts` | Diretiva do Next | `createContext`/`useContext`, hooks e eventos só rodam em componente de cliente no App Router. O Visto é SPA e não precisa. |
 | `src/lib/tema.ts` | Chave `ascent.tema`; `CHAVE_TEMA` importada de `tema-script.ts`; `useTema`/`useTemaEfetivo` começam em `'sistema'`/`'claro'` e leem o valor no efeito | O layout raiz é de servidor e não pode importar módulo com hooks; o estado inicial lido do navegador quebraria a hidratação (a primeira pintura já sai certa pelo script do `<head>`). |
 | `src/lib/tema-script.ts` (= o `<script>` do `index.html`) | Vira uma string exportada, posta no `<head>` pelo `layout.tsx` | No Next não há `index.html`. |
-| `src/lib/barra-recolhida.ts` | Chave `ascent.barra-recolhida`; começa aberta e lê no efeito | Mesmo motivo do tema. Quem recolheu a barra a vê abrir e fechar uma vez ao carregar. |
+| `src/lib/barra-recolhida.ts` | Chave `ascent.barra-recolhida`; a escolha vai também num cookie (`src/lib/barra-cookie.ts`), que o layout do servidor lê e passa como estado inicial (`useBarraRecolhida(inicial)`) | Sem isso, a barra recolhida saía aberta do servidor e o conteúdo saltava 192px a cada carregamento. |
 | `src/components/layout/Sidebar.tsx`, `Topbar.tsx`, `AppShell.tsx` | Mesmo markup e classes; sem papéis, âncoras, sino, menu da conta nem saída por inatividade; menu e trilha de `src/lib/navegacao.ts`; dados do topo por prop do layout; `print:hidden` e `print:!pl-0` | O Ascent tem uma senha de equipe, sem papéis. O conteúdo vem por `children` (App Router). |
 | `src/components/layout/AppShell.tsx` | Rodapé "Delp · Divulgação interna · Fonte" em `text-txt-2` | O `--muted` dá ~4,2:1 sobre o `--bg-2` (abaixo do AA). |
 | `src/components/layout/barra/ItemBarra.tsx` | `next/link` com `aria-current` no lugar do `NavLink` | Não há React Router. |
@@ -34,6 +34,8 @@ Nada aqui foi aplicado no Visto.
 | `src/app/login/page.tsx` (= `LoginPage.tsx`) | Uma cena só (`public/images/cena-ascent.svg`, arte própria na linguagem das cenas do Visto), sem carrossel; "Entrar no sistema" (sem usuário lembrado: o Ascent entra com a senha da equipe); sem "Esqueci minha senha", "Lembrar usuário", aviso de Caps Lock e freio de tentativas; rodapé sem "tentativas registradas" e sem aviso de privacidade; endosso da Delp branco no tema escuro (duas imagens trocadas por CSS) | O Ascent não tem usuários, recuperação de senha, trilha de tentativas nem página de privacidade: o texto só diz o que é verdade no sistema. |
 | `src/components/CampoSenha.tsx` (campo "Senha" + `classeInput` de `LoginPage.tsx`) | Componente cliente próprio | O Login do Ascent é de servidor; só o mostrar/ocultar precisa de estado. |
 | `src/lib/saudacao.ts` (= `saudacaoDaHora` de `src/lib/formato.ts`) | Arquivo próprio, com o teste do Visto | O `formato.ts` do Ascent já existia e é outro. |
+| `src/app/login/page.tsx` (`CLASSE_BOTAO_ENTRAR`) | `bg-grad-delp` no lugar de `bg-delp-red` | No tema escuro o `--delp-red` clareia e o branco por cima cai para ~3:1. |
+| `src/app/layout.tsx` (viewport) | Sem `viewportFit: "cover"` | O navegador mantém o conteúdo fora do entalhe e do indicador de início do iPhone (o CSS antigo compensava com `env(safe-area-inset-*)`). |
 
 ## Cores fixas permitidas
 
