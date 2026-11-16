@@ -16,5 +16,5 @@ export async function middleware(req: NextRequest) {
 
 // O que fica de fora abre sem sessão: o Login e o que ele carrega (artes em images/, ícones em icons/).
 export const config = {
-  matcher: ["/((?!login|api/login|_next/static|_next/image|favicon.ico|delp-logo.png|robots.txt|manifest.webmanifest|icons/|images/).*)"],
+  matcher: ["/((?!login|api/login|_next/static|_next/image|favicon.ico|robots.txt|manifest.webmanifest|icons/|images/).*)"],
 };

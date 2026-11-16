@@ -1,54 +1,37 @@
-import { Lock } from "lucide-react";
+import { AlertCircle, Lock, LogIn } from "lucide-react";
 import type { Metadata } from "next";
+import { CampoSenha } from "@/components/CampoSenha";
 import { LogoAscent } from "@/components/marca/LogoAscent";
-import { Button } from "@/components/ui/Button";
-import { CLASSE_CAMPO } from "@/components/ui/Campo";
+import { saudacaoDaHora } from "@/lib/saudacao";
+import pacote from "../../../package.json";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 // Anatomia do Login do Visto (src/pages/LoginPage.tsx@f66a6c3): cena escura com a marca e o
 // posicionamento à esquerda (só desktop) e o painel de 480px com o filete vermelho à direita.
-// Sem carrossel: há uma cena só, desenhada aqui com a grade sutil das cenas do Visto e os
-// triângulos da marca como marca d'água (o mesmo gesto do FaixaDaMarca).
-// Exceção declarada em docs/visto-desvios.md: a cena usa cores fixas (é arte, sempre escura).
-const FUNDO_CENA = "radial-gradient(circle at 50% 45%, #1E1E1E, #050505 75%)";
+// Uma cena só (sem carrossel): public/images/cena-ascent.svg, na linguagem das cenas do Visto.
 
-function Cena() {
-  return (
-    <div className="absolute inset-0 hidden lg:block" aria-hidden="true" style={{ background: FUNDO_CENA }}>
-      <svg className="h-full w-full text-delp-red">
-        <defs>
-          <pattern id="grade-cena" width="80" height="80" patternUnits="userSpaceOnUse">
-            <path d="M80 0H0V80" fill="none" stroke="#FFFFFF" strokeOpacity="0.035" strokeWidth="1" />
-          </pattern>
-          {/* Os três triângulos em escada da logo, ampliados como marca d'água. */}
-          <pattern id="triangulos-ascent" width="1100" height="900" patternUnits="userSpaceOnUse" patternTransform="scale(0.32)">
-            <g fill="currentColor" stroke="currentColor" strokeLinejoin="round" style={{ opacity: 0.055 }} transform="translate(30 900)">
-              <path d="M0,-40 L300,-40 L150.0,-310.0 Z" strokeWidth="27" />
-              <path d="M250,-230 L630,-230 L440.0,-572.0 Z" strokeWidth="34" />
-              <path d="M560,-440 L1040,-440 L800.0,-872.0 Z" strokeWidth="43" />
-            </g>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grade-cena)" />
-        <rect width="100%" height="100%" fill="url(#triangulos-ascent)" />
-      </svg>
-      {/* Gradiente de leitura (o mesmo do Visto): o texto do hero fica legível sobre a cena. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-black/25" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-    </div>
-  );
-}
+// Origem: delp-visto@f66a6c3 LoginPage.tsx (CLASSE_BOTAO_ENTRAR)
+const CLASSE_BOTAO_ENTRAR =
+  "flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-delp-red text-lg font-semibold text-white shadow-[0_8px_18px_-10px_rgba(204,15,16,0.55)] transition-colors hover:bg-delp-red-dark disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none";
+const ERRO = "flex items-start gap-1.5 text-sm font-semibold text-delp-red";
+
+export const dynamic = "force-dynamic"; // a saudação segue o relógio
 
 export default function Login({ searchParams }: { searchParams: { erro?: string; volta?: string } }) {
   const configurado = Boolean(process.env.ACESSO_SENHA && process.env.SESSAO_SEGREDO);
   const semConfig = !configurado || searchParams.erro === "config";
   const senhaErrada = !semConfig && Boolean(searchParams.erro);
-  const erro = "rounded-btn border border-danger bg-danger/10 px-3.5 py-2.5 text-sm font-semibold text-delp-red";
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-bg-2">
-      <Cena />
+    <div className="relative flex min-h-screen overflow-hidden bg-bg">
+      {/* Cena (só desktop) e o gradiente de leitura do Visto, para o texto do hero ficar legível. */}
+      <div className="absolute inset-0 z-0 hidden lg:block" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/cena-ascent.svg" alt="" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+      </div>
 
       {/* Hero à esquerda (só desktop): marca + posicionamento. */}
       <div className="z-10 hidden flex-1 flex-col items-start justify-center px-16 lg:flex xl:px-24">
@@ -66,7 +49,7 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
         <div className="mt-12 flex items-center gap-3">
           <span className="text-xs uppercase tracking-widest text-white/50">Uma plataforma</span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/delp-logo.png" alt="Delp Engenharia" className="w-[120px] brightness-0 invert" />
+          <img src="/images/delp-logo.png" alt="Delp Engenharia" className="w-[120px] brightness-0 invert" />
         </div>
       </div>
 
@@ -82,52 +65,58 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
 
           <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col lg:max-w-none">
             <div className="flex flex-1 flex-col justify-center py-6">
-              <LogoAscent className="mb-8 w-[180px] lg:hidden" />
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-delp-red">PCP · Subida de saldo</p>
-              <h2 className="mt-2 text-2xl font-bold leading-tight text-txt">Entrar</h2>
+              <div className="mb-9 text-center lg:text-left">
+                <div className="mb-8 flex justify-center lg:justify-start">
+                  <LogoAscent tom="escuro" className="w-[200px]" />
+                </div>
+                {/* Saudação pelo relógio de Brasília. O Ascent entra com a senha da equipe, então não há nome. */}
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-delp-red">{saudacaoDaHora()}</p>
+                <h2 className="mt-2 text-3xl font-bold tracking-tight text-txt">Entrar no sistema</h2>
+                <p className="mt-1.5 text-base text-txt-2">Subida de saldo do PCP</p>
+              </div>
 
-              <form action="/api/login" method="post" className="mt-6 flex flex-col gap-4">
+              <form action="/api/login" method="post" className="flex flex-col">
                 {semConfig && (
-                  <p className={erro} role="alert">
+                  <p className={`${ERRO} mb-4 rounded-btn border border-danger bg-danger/10 px-3.5 py-2.5`} role="alert">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                     O acesso ainda não foi configurado no servidor. Fale com o responsável pela plataforma.
                   </p>
                 )}
-                <label htmlFor="senha" className="flex flex-col gap-1.5 text-sm font-semibold text-txt">
-                  Senha da equipe
-                  <input
-                    id="senha"
-                    name="senha"
-                    type="password"
-                    className={CLASSE_CAMPO}
-                    autoComplete="current-password"
-                    required
-                    autoFocus
-                    aria-invalid={senhaErrada ? true : undefined}
-                    aria-describedby={senhaErrada ? "senha-erro" : undefined}
-                  />
-                </label>
+                <CampoSenha rotulo="Senha da equipe" erro={senhaErrada} />
                 {senhaErrada && (
-                  <p className={erro} id="senha-erro" role="alert">
+                  <p className={`${ERRO} mt-1.5`} id="senha-erro" role="alert">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                     Senha incorreta.
                   </p>
                 )}
                 <input type="hidden" name="volta" value={searchParams.volta ?? ""} />
-                <Button type="submit" className="w-full">
+                <button type="submit" className={`mt-5 ${CLASSE_BOTAO_ENTRAR}`}>
+                  <LogIn size={20} aria-hidden="true" />
                   Entrar
-                </Button>
+                </button>
               </form>
             </div>
 
-            {/* Endosso da Delp só fora do desktop (no desktop ele já está no hero). */}
+            {/* Endosso da Delp só fora do desktop (no desktop ele já está no hero). A logo é escura
+                (feita para fundo claro): no tema escuro entra a versão branca (brightness-0 + invert). */}
             <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
-              <span className="text-[10px] uppercase tracking-[0.14em] text-txt-2">Uma plataforma</span>
+              <span className="text-xs uppercase tracking-widest text-txt-2">Uma plataforma</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/delp-logo.png" alt="Delp Engenharia" className="w-[96px]" />
+              <img src="/images/delp-logo.png" alt="Delp Engenharia" className="so-tema-claro w-[110px]" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/delp-logo.png" alt="Delp Engenharia" className="so-tema-escuro w-[110px] brightness-0 invert" />
             </div>
-            <p className="flex items-center justify-center gap-1.5 border-t border-subtle pt-4 text-center text-xs text-txt-2">
-              <Lock size={12} className="shrink-0" aria-hidden="true" />
-              Acesso só com a senha da equipe.
-            </p>
+
+            <div className="border-t border-subtle pt-4 text-center">
+              {/* Os dois fatos são verdade no sistema: HTTPS na Vercel e a entrada só com a senha da equipe. */}
+              <p className="mb-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-xs text-txt-2">
+                <Lock size={12} className="shrink-0" aria-hidden="true" />
+                Conexão segura · acesso só com a senha da equipe
+              </p>
+              <p className="select-none text-xs text-txt-2">
+                <span className="font-semibold">Ascent</span> — subida de saldo do PCP da Delp Engenharia · v{pacote.version}
+              </p>
+            </div>
           </div>
         </div>
       </div>
