@@ -60,16 +60,20 @@ export function Comparacao({
   const falta = previsto !== undefined && realizado !== undefined ? atrasoQtd({ realizado, esperado: fabric * previsto }) : undefined;
   return (
     <div className={compacto ? "cmp cmp-c" : "cmp"}>
-      <span className="cmp-n">Saldo</span>
-      <span className="barra cmp-saldo" role="presentation">
-        <span style={{ width: largura(saldo) }} />
+      <span className="cmp-l cmp-saldo">
+        <span className="cmp-n">Saldo</span>
+        <span className="barra" role="presentation">
+          <span style={{ width: largura(saldo) }} />
+        </span>
+        <b className="cmp-v">{pct(saldo)}</b>
       </span>
-      <b className="cmp-v">{pct(saldo)}</b>
-      <span className="cmp-n">Fabricação</span>
-      <span className="barra cmp-fab" role="presentation">
-        <span style={{ width: largura(fabric) }} />
+      <span className="cmp-l cmp-fab">
+        <span className="cmp-n">Fabricação</span>
+        <span className="barra" role="presentation">
+          <span style={{ width: largura(fabric) }} />
+        </span>
+        <b className="cmp-v">{pct(fabric)}</b>
       </span>
-      <b className="cmp-v">{pct(fabric)}</b>
       <TextoRitmo saldo={saldo} fabric={fabric} falta={falta} curto={compacto} />
     </div>
   );

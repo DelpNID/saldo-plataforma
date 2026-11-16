@@ -528,19 +528,23 @@ a.filtro-ativo:hover{color:var(--delp-branco);background:var(--delp-vermelho);bo
 /* ===== 8. Saldo × Fabricação e situação da RA (16/11) =====
    Saldo = azul Subsea, Fabricação = azul Mooring (paleta Delp; ΔE 17,5 para daltônicos).
    Nome e % sempre escritos ao lado de cada barra: a cor nunca fica sozinha. */
-.cmp{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:5px 10px;align-items:center;min-width:0}
-.cmp .barra{height:10px}
-.cmp-fab>span{background:var(--delp-serie-fabric)}
+.cmp{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* Cada série numa linha: nome | barra | % (no compacto: nome e % em cima, barra embaixo) */
+.cmp .cmp-l{display:grid;grid-template-columns:84px minmax(0,1fr) 56px;grid-template-areas:"n b v";align-items:center;gap:0 10px;min-width:0}
+.cmp .cmp-l .cmp-n{grid-area:n}
+.cmp .cmp-l .barra{grid-area:b;height:10px}
+.cmp .cmp-l .cmp-v{grid-area:v}
+.cmp-fab .barra>span{background:var(--delp-serie-fabric)}
 .cmp-n{font-size:13px;font-weight:600;color:var(--delp-texto-apoio)}
-.cmp-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:50px}
-.cmp .ritmo{grid-column:1/-1}
+.cmp-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
 .ritmo{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 .ritmo-atraso{color:var(--delp-vermelho)}
 .ritmo-em-dia,.ritmo-a-frente{color:var(--delp-ok)}
-.cmp-c{gap:2px 8px}
-.cmp-c .barra{height:7px}
+.cmp-c{gap:3px}
+.cmp-c .cmp-l{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n v" "b b";gap:1px 8px}
+.cmp-c .cmp-l .barra{height:7px}
 .cmp-c .cmp-n{font-size:12px}
-.cmp-c .cmp-v{font-size:14px;min-width:46px}
+.cmp-c .cmp-v{font-size:14px}
 .cmp-c .ritmo{font-size:12.5px}
 .avanco-cmp{display:flex;flex-direction:column;gap:3px}
 .avanco-cmp small{font-size:13px}
