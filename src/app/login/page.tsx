@@ -36,7 +36,7 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
       {/* Hero à esquerda (só desktop): marca + posicionamento. */}
       <div className="z-10 hidden flex-1 flex-col items-start justify-center px-16 lg:flex xl:px-24">
         <h1 className="mb-6">
-          <LogoAscent tom="claro" className="w-[300px] xl:w-[360px]" />
+          <LogoAscent tom="claro" className="w-[272px] xl:w-[326px]" />
         </h1>
         <p className="mb-3 max-w-md text-2xl font-semibold leading-snug text-white xl:text-3xl">
           O saldo de cada projeto, do que já subiu ao que falta baixar.
@@ -67,7 +67,7 @@ export default function Login({ searchParams }: { searchParams: { erro?: string;
             <div className="flex flex-1 flex-col justify-center py-6">
               <div className="mb-9 text-center lg:text-left">
                 <div className="mb-8 flex justify-center lg:justify-start">
-                  <LogoAscent tom="escuro" className="w-[200px]" />
+                  <LogoAscent tom="escuro" className="w-[181px]" />
                 </div>
                 {/* Saudação pelo relógio de Brasília. O Ascent entra com a senha da equipe, então não há nome. */}
                 <p className="text-sm font-semibold uppercase tracking-[0.14em] text-delp-red">{saudacaoDaHora()}</p>

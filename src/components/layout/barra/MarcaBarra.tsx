@@ -46,7 +46,7 @@ export function MarcaBarra({ onFechar, recolhida = false, onAlternar }: MarcaBar
           900px, então não há como decidir isto em JS. */}
       {recolhida && <SimboloAscent className="hidden w-10 shell:block" />}
       <div className={clsx(recolhida && 'shell:hidden')}>
-        <LogoAscent tom="escuro" className="w-[132px]" />
+        <LogoAscent tom="escuro" className="w-[120px]" />
       </div>
       <p
         className={clsx(

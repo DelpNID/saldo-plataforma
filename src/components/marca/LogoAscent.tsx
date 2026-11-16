@@ -4,7 +4,9 @@
 // -----------------------------------------------------------------------------
 // LogoAscent.tsx — a marca do sistema
 //
-// `LogoAscent` é o lockup (três triângulos em escada sobre a base + "Ascent").
+// `LogoAscent` é o lockup: o símbolo da Delp (três triângulos para baixo, cantos
+//   arredondados, #CC0F10) + "Ascent". Símbolo na altura do "A", com a ponta na linha
+//   de base, como na logo Delp (pedido do responsável em 16/11/2026).
 //   tom="escuro" (padrão): para fundo claro — base e texto pretos.
 //   tom="claro": para fundo escuro (o lado da cena no Login) — a versão negativa.
 // `SimboloAscent` é só o desenho, para onde o lockup não cabe (barra recolhida, 404).
@@ -18,10 +20,10 @@ interface LogoAscentProps {
 export function LogoAscent({ tom = "escuro", className = "" }: LogoAscentProps) {
   const arte = tom === "claro" ? "/images/ascent-logo-negativo.svg" : "/images/ascent-logo.svg";
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={arte} alt="Ascent" width={4140} height={1035} className={`h-auto ${className}`} />;
+  return <img src={arte} alt="Ascent" width={3750} height={660} className={`h-auto ${className}`} />;
 }
 
 export function SimboloAscent({ className = "" }: { className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/images/ascent-simbolo.svg" alt="Ascent" width={1124} height={954} className={`h-auto ${className}`} />;
+  return <img src="/images/ascent-simbolo.svg" alt="Ascent" width={714} height={633} className={`h-auto ${className}`} />;
 }
