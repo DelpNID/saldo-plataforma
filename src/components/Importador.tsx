@@ -131,14 +131,20 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
       <Etapas atual={etapa} />
       {!habilitada && (
         <p className="aviso" role="note">
-          <b>Importação pelo site desligada.</b> Falta cadastrar a senha de importação (<span className="mono">IMPORTACAO_SENHA</span>) na Vercel.
-          Enquanto isso, a atualização é feita pelo NID com o comando de carga.
+          <b>Importação pelo site desligada.</b> Falta cadastrar a senha de importação (<span className="mono">IMPORTACAO_SENHA</span>) na Vercel. Enquanto
+          isso, a atualização é feita pelo NID com o comando de carga.
         </p>
       )}
       <ol className="passos">
-        <li><b>Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.</li>
-        <li><b>Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.</li>
-        <li><b>Confira o resumo</b>, digite a senha de importação e atualize. A troca acontece de uma vez, só no final.</li>
+        <li>
+          <b>Atualize e salve</b> a planilha no Excel, para as fórmulas ficarem recalculadas.
+        </li>
+        <li>
+          <b>Escolha o arquivo</b> abaixo. A plataforma lê e mostra um resumo.
+        </li>
+        <li>
+          <b>Confira o resumo</b>, digite a senha de importação e atualize. A troca acontece de uma vez, só no final.
+        </li>
       </ol>
 
       <label className={`arquivo card${ocupado ? " ocupado" : ""}`}>
@@ -152,7 +158,9 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
           }}
         />
         <span className="arquivo-t">{fase.tipo === "inicio" || fase.tipo === "feito" ? "Escolher a planilha (.xlsx)" : "Escolher outra planilha"}</span>
-        <span className="arquivo-d">A planilha é lida aqui no seu computador. Só os dados das abas Resumo Geral, Componentes, Dados e CNC_PCQ são enviados.</span>
+        <span className="arquivo-d">
+          A planilha é lida aqui no seu computador. Só os dados das abas Resumo Geral, Componentes, Dados e CNC_PCQ são enviados.
+        </span>
       </label>
 
       {fase.tipo === "lendo" && (
@@ -176,16 +184,48 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
             {lida.nome} · projeto <b>{resumo.projeto}</b> · centro de custo {resumo.centroCusto}
           </p>
           <dl className="resumo-grade">
-            <div className="destaque"><dt>Avanço do saldo</dt><dd>{n(resumo.avanco * 100)}%</dd></div>
-            <div><dt>Códigos de tarefa</dt><dd>{n(resumo.tarefas)}</dd></div>
-            <div><dt>Componentes</dt><dd>{n(resumo.componentes)}</dd></div>
-            <div><dt>Pendentes de baixa</dt><dd>{n(resumo.pendentes)}</dd></div>
-            <div><dt>OPs</dt><dd>{n(resumo.ordens)}</dd></div>
-            <div><dt>Linhas de plano de corte</dt><dd>{n(resumo.planos)}</dd></div>
+            <div className="destaque">
+              <dt>Avanço do saldo</dt>
+              <dd>{n(resumo.avanco * 100)}%</dd>
+            </div>
+            {resumo.fabric !== null && (
+              <div>
+                <dt>Avanço da fabricação</dt>
+                <dd>{n(resumo.fabric * 100)}%</dd>
+              </div>
+            )}
+            {resumo.raPendentes !== null && (
+              <div>
+                <dt>RA pendente</dt>
+                <dd>{n(resumo.raPendentes)}</dd>
+              </div>
+            )}
+            <div>
+              <dt>Códigos de tarefa</dt>
+              <dd>{n(resumo.tarefas)}</dd>
+            </div>
+            <div>
+              <dt>Componentes</dt>
+              <dd>{n(resumo.componentes)}</dd>
+            </div>
+            <div>
+              <dt>Pendentes de baixa</dt>
+              <dd>{n(resumo.pendentes)}</dd>
+            </div>
+            <div>
+              <dt>OPs</dt>
+              <dd>{n(resumo.ordens)}</dd>
+            </div>
+            <div>
+              <dt>Linhas de plano de corte</dt>
+              <dd>{n(resumo.planos)}</dd>
+            </div>
           </dl>
           {!resumo.temAbaCnc && <p className="aviso">A planilha não tem a aba CNC_PCQ: os planos de corte não vão aparecer.</p>}
           {resumo.cncSemControle > 0 && (
-            <p className="aviso">{n(resumo.cncSemControle)} componentes têm plano na coluna CNC sem linha na aba CNC_PCQ. Eles aparecem como “Fora da aba CNC_PCQ”.</p>
+            <p className="aviso">
+              {n(resumo.cncSemControle)} componentes têm plano na coluna CNC sem linha na aba CNC_PCQ. Eles aparecem como “Fora da aba CNC_PCQ”.
+            </p>
           )}
           {grande && <p className="erro">O envio passou de 4,4 MB. Avise o NID: a planilha cresceu além do limite da Vercel.</p>}
           {resumo.divergencias.length > 0 && (
@@ -210,7 +250,9 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
               void enviar();
             }}
           >
-            <label className="sr" htmlFor="senha-importacao">Senha de importação</label>
+            <label className="sr" htmlFor="senha-importacao">
+              Senha de importação
+            </label>
             <input
               ref={campoSenha}
               id="senha-importacao"
@@ -253,7 +295,9 @@ export function Importador({ habilitada }: { habilitada: boolean }) {
       {fase.tipo === "feito" && (
         <div className="sucesso" role="status">
           <p>{fase.mensagem}</p>
-          <a className="btn" href="/">Ver o painel atualizado</a>
+          <a className="btn" href="/">
+            Ver o painel atualizado
+          </a>
         </div>
       )}
     </div>

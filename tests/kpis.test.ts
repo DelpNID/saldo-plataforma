@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { avancoDe, buscarCodigos, calcularKpis, dataRef, resumirSelecao, serieDiaria } from "@/lib/kpis";
-import { montarArvore, type CompBase } from "@/lib/regras";
+import { atrasoQtd, avancoDe, buscarCodigos, calcularKpis, dataRef, fabricDe, resumirSelecao, ritmoSaldo, serieDiaria } from "@/lib/kpis";
+import { contarRa, montarArvore, textoRa, type CompBase } from "@/lib/regras";
 
 describe("KPIs da Gestão", () => {
   it("soma situação dos códigos, pendentes, OPs com saldo e cortes com as regras das outras telas", () => {
     const k = calcularKpis({
-      totais: { previsto: 10, realizado: 4, execucoes: 3, execPend: 1.5 },
+      totais: { previsto: 10, realizado: 4, esperado: 6, execucoes: 3, execPend: 1.5 },
       tarefas: [{ avanco: 0 }, { avanco: 0.4 }, { avanco: 1 }, { avanco: 0 }],
       componentes: [
         { codOrdem: "1/26", previsto: 1, apontado2: 1, apontado: 0 }, // OP com saldo
@@ -90,7 +90,7 @@ describe("avanço por execução", () => {
 });
 
 describe("busca da Gestão", () => {
-  const c = (cod: string, descricao: string, desenho: string, previsto: number, realizado: number, pendentes = 0) => ({
+  const c = (cod: string, descricao: string, desenho: string, previsto: number, realizado: number, pendentes = 0, fabric = 0) => ({
     cod,
     descricao,
     desenho,
@@ -101,10 +101,11 @@ describe("busca da Gestão", () => {
     componentes: 10,
     execucoes: 2,
     execPend: 1,
+    fabric,
   });
   const lista = [
-    c("1.46", "PIN PILE BUCKET 26IN LOCKING BAR", "090012-35-DA-0300", 100, 0, 30),
-    c("1.52", "PIN PILE BUCKET AXIS PIN", "090012-35-DA-0300", 50, 25, 10),
+    c("1.46", "PIN PILE BUCKET 26IN LOCKING BAR", "090012-35-DA-0300", 100, 0, 30, 0.5),
+    c("1.52", "PIN PILE BUCKET AXIS PIN", "090012-35-DA-0300", 50, 25, 10, 1),
     c("1.18", "BUOYANCY PADEYE TYPE BP-2", "090012-35-DA-0229", 110, 3, 109),
     c("2.10", "PEÇA DE FIXAÇÃO", "FMC-07896-DP-0001", 10, 10),
   ];
@@ -121,5 +122,56 @@ describe("busca da Gestão", () => {
     const r = resumirSelecao(buscarCodigos(lista, "pin pile"));
     expect(r).toMatchObject({ codigos: 2, desenhos: 1, previsto: 150, realizado: 25, pendentes: 40, execPend: 2 });
     expect(r.avanco).toBeCloseTo(25 / 150);
+    // fabricação do recorte: (0,5 × 100 + 1 × 50) ÷ 150
+    expect(r.fabric).toBeCloseTo(100 / 150);
+  });
+});
+
+describe("saldo × fabricação", () => {
+  it("fabricação do conjunto é o esperado ÷ previsto", () => {
+    expect(fabricDe({ previsto: 200, esperado: 50 })).toBe(0.25);
+    expect(fabricDe({ previsto: 0, esperado: 0 })).toBe(0);
+  });
+
+  it("diz se o saldo está atrás, acompanha ou à frente da fabricação", () => {
+    expect(ritmoSaldo(0.497, 0.884)).toEqual({ ritmo: "atraso", pp: expect.closeTo(38.7, 5) });
+    expect(ritmoSaldo(0.5, 0.503)).toMatchObject({ ritmo: "em-dia" }); // até 0,5 p.p.
+    expect(ritmoSaldo(0.9, 0.8)).toEqual({ ritmo: "a-frente", pp: expect.closeTo(10, 5) });
+  });
+
+  it("quantidade que falta subir para alcançar a fabricação nunca é negativa", () => {
+    expect(atrasoQtd({ realizado: 54.6, esperado: 0.884 * 110 })).toBeCloseTo(42.64, 2);
+    expect(atrasoQtd({ realizado: 90, esperado: 80 })).toBe(0);
+  });
+});
+
+describe("situação da RA", () => {
+  const base = {
+    codEstrutura: "E",
+    codigoPrd: "P",
+    nome: "Peça",
+    unidade: "UN",
+    qtdUsada: 1,
+    apontado: 0,
+    tarPai: "1.01",
+    exec: "1",
+    tarFilho: "0",
+    grupo: "01.018",
+    previsto: 1,
+    apontado2: 0,
+  };
+  it("conta por situação e resume o item da árvore", () => {
+    const comps: CompBase[] = [
+      { ...base, codOrdem: "1/26", situacaoRa: "RA Pendente" },
+      { ...base, codOrdem: "2/26", situacaoRa: "RA gerada" },
+      { ...base, codOrdem: "3/26", situacaoRa: "RA Pendente" },
+      { ...base, codOrdem: "4/26", situacaoRa: null },
+    ];
+    expect(contarRa(comps)).toEqual({ "RA Pendente": 2, "RA gerada": 1 });
+    expect(contarRa([{ situacaoRa: undefined }])).toEqual({});
+    const item = montarArvore(comps)[0].raizes[0].itens[0];
+    expect(item.ra).toEqual({ "RA Pendente": 2, "RA gerada": 1 });
+    expect(textoRa(item.ra)).toBe("RA Pendente 2 · RA gerada 1");
+    expect(textoRa({ "Subconjunto (sem RA)": 3 })).toBe("Subconjunto (sem RA)");
   });
 });

@@ -6,6 +6,8 @@ import { abasDoArquivo } from "./lerXlsx";
 import { ErroPlanilha, lerPlanilha } from "./planilha";
 
 export interface ResumoLeitura {
+  fabric: number | null; // % AVANÇO FABRIC do projeto (null: planilha sem a coluna)
+  raPendentes: number | null; // componentes com SITUACAO_RA = RA Pendente
   projeto: string;
   centroCusto: string;
   tarefas: number;
@@ -38,6 +40,8 @@ ctx.onmessage = async (ev: MessageEvent<{ dados: ArrayBuffer; nome: string }>) =
       planos: c.planos.length,
       pendentes: c.componentes.filter((x) => x.apontado <= 0).length,
       avanco: c.totais.previsto > 0 ? c.totais.realizado / c.totais.previsto : 0,
+      fabric: c.comFabric && c.totais.previsto > 0 ? c.esperado / c.totais.previsto : null,
+      raPendentes: c.componentes.some((x) => x.situacaoRa) ? c.componentes.filter((x) => x.situacaoRa === "RA Pendente").length : null,
       divergencias: c.divergencias.slice(0, 20),
       cncSemControle: c.cncSemControle,
       temAbaCnc: (json.planos?.length ?? 0) > 0,

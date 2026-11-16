@@ -60,6 +60,7 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
       avanco: t.avanco,
       previsto: t.qtdPrevisto,
       realizado: t.qtdRealizada,
+      fabric: carga.comFabric ? t.avancoFabric : null,
     });
     mapa.set(desenho, d);
   }
@@ -68,7 +69,12 @@ export default async function LinhagemPage({ searchParams }: { searchParams: { a
   const filhasPorCodigo = Object.fromEntries(
     [...porPai.entries()].map(([pai, gs]) => [pai, agregarOrigens(pai, gs).map((o) => ({ ...o, titulo: tituloOrigem(o, pai) }))]),
   );
-  const avancoPorCodigo = Object.fromEntries(tarefas.map((t) => [t.codTarefa, { avanco: t.avanco, previsto: t.qtdPrevisto, realizado: t.qtdRealizada }]));
+  const avancoPorCodigo = Object.fromEntries(
+    tarefas.map((t) => [
+      t.codTarefa,
+      { avanco: t.avanco, previsto: t.qtdPrevisto, realizado: t.qtdRealizada, fabric: carga.comFabric ? t.avancoFabric : null },
+    ]),
+  );
 
   const avanco = carga.totalPrevisto > 0 ? carga.totalRealizado / carga.totalPrevisto : 0;
   const situacoes = tarefas.map((t) => situacaoTarefa(t.avanco));

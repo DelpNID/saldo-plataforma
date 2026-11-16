@@ -11,7 +11,26 @@ const resumo: Linhas = [
   [null, null, null, null, null, null, null, null, null, null],
 ];
 
-const cabComp = ["CODORDEM", "CODESTRUTURA", "IDATVORDEM", "QTDUSADA", "APONTADO", "CODIGOPRD", "NOMEFANTASIA", "CODUNDCONTROLE", "CODCCUSTO", "RESPONSAVEL", "CNC", "Cod.Tar Pai", "EXEC", "Cod.Tar Filho", "COD2", "PREVISTO", "APONTADO2", "LOTE"];
+const cabComp = [
+  "CODORDEM",
+  "CODESTRUTURA",
+  "IDATVORDEM",
+  "QTDUSADA",
+  "APONTADO",
+  "CODIGOPRD",
+  "NOMEFANTASIA",
+  "CODUNDCONTROLE",
+  "CODCCUSTO",
+  "RESPONSAVEL",
+  "CNC",
+  "Cod.Tar Pai",
+  "EXEC",
+  "Cod.Tar Filho",
+  "COD2",
+  "PREVISTO",
+  "APONTADO2",
+  "LOTE",
+];
 const componentes: Linhas = [
   cabComp,
   ["10/25", "03.023.1", 1, 1, 0, "01.018.9", "CHAPA S355", "KG", "3.07896", null, "CNC0006233", "1.01", 1, 0, "01.018", 2, 1, ""],
@@ -29,7 +48,27 @@ const cnc: Linhas = [
   [],
   ["Controle de CNC "],
   [],
-  ["QTDPREV", "NPLANO", "ID", "OP", "OS", "QTDAPONT", "IDLOTE", "DATACRIACAO", "QTDSUCATA", "NLOTE", "DESCRICAOOP", "STATUS", "QTDEMP", "QTDMPFINAL", "STATUS OP", "POS", null, "OP", "CNCs"],
+  [
+    "QTDPREV",
+    "NPLANO",
+    "ID",
+    "OP",
+    "OS",
+    "QTDAPONT",
+    "IDLOTE",
+    "DATACRIACAO",
+    "QTDSUCATA",
+    "NLOTE",
+    "DESCRICAOOP",
+    "STATUS",
+    "QTDEMP",
+    "QTDMPFINAL",
+    "STATUS OP",
+    "POS",
+    null,
+    "OP",
+    "CNCs",
+  ],
   [1, "CNC0006233", 1, "10/25", "3.07896", 1, 99, 45915.881, 288.7, "231018", "CH - 1", 5, 5152, 429.3, "Apontada", "2 ", null, "10/25", "CNC0006233"],
   [2, "CNC0006233", 1, "12/25", "3.07896", 0, 99, 45915.881, 288.7, "231018", "CH - 3", 2, 5152, 100, null, "3 ", null, null, null],
 ];
@@ -48,9 +87,49 @@ describe("leitura da planilha", () => {
       expect.objectContaining({ op: "10/25", atividades: 2, ativApontadas: 1, ativParciais: 1, horasPrevistas: 3, horasApontadas: 2.5 }),
     ]);
     expect(j.planos).toHaveLength(2);
-    expect(j.planos?.[0]).toMatchObject({ plano: "CNC0006233", op: "10/25", qtdPrev: 1, qtdApont: 1, criadoEm: "2025-09-15", statusOp: "Apontada", lote: "231018" });
+    expect(j.planos?.[0]).toMatchObject({
+      plano: "CNC0006233",
+      op: "10/25",
+      qtdPrev: 1,
+      qtdApont: 1,
+      criadoEm: "2025-09-15",
+      statusOp: "Apontada",
+      lote: "231018",
+    });
     // STATUS OP vazio: usa a legenda da coluna STATUS
     expect(j.planos?.[1]).toMatchObject({ statusOp: "Programada" });
+  });
+
+  it("lê % AVANÇO FABRIC e SITUACAO_RA da revisão nova; o número da RA fica de fora", () => {
+    // Revisão de 16/11: sem PRIORIDADE e com % AVANÇO FABRIC no lugar
+    const resumoNovo: Linhas = [
+      [null, null, null, null, 2, 1, 3, 1, null, 0.00001], // o total desta coluna na planilha vem errado: não é usado
+      [...resumo[1].slice(0, 9), "% AVANÇO FABRIC"],
+      [...resumo[2].slice(0, 9), 0.8],
+    ];
+    const compNovo: Linhas = [
+      [...cabComp, "RA", "SITUACAO_RA"],
+      [...componentes[1], 193086, "RA Pendente"],
+      [...componentes[2], null, "Subconjunto (sem RA)"],
+    ];
+    const j = lerPlanilha({ "Resumo Geral": resumoNovo, Componentes: compNovo, Dados: dados }, "x.xlsx");
+    expect(j.tarefas[0]).toMatchObject({ codTarefa: "1.01", avancoFabric: 0.8 });
+    expect(j.tarefas[0]).not.toHaveProperty("prioridade");
+    expect(prepararCarga(j).tarefas[0].prioridade).toBeNull();
+    expect(j.componentes[0]).toMatchObject({ situacaoRa: "RA Pendente" });
+    expect(j.componentes[0]).not.toHaveProperty("ra");
+    const c = prepararCarga(j);
+    expect(c.comFabric).toBe(true);
+    expect(c.esperado).toBeCloseTo(0.8 * 3); // % fabric × QTD PREVISTO
+    expect(c.tarefas[0].avancoFabric).toBe(0.8);
+    expect(c.componentes.map((x) => x.situacaoRa)).toEqual(["RA Pendente", "Subconjunto (sem RA)"]);
+  });
+
+  it("planilha sem % AVANÇO FABRIC e sem SITUACAO_RA: comparação desligada", () => {
+    const c = prepararCarga(lerPlanilha({ "Resumo Geral": resumo, Componentes: componentes, Dados: dados }, "x.xlsx"));
+    expect(c.comFabric).toBe(false);
+    expect(c.esperado).toBe(0);
+    expect(c.componentes[0].situacaoRa).toBeNull();
   });
 
   it("aceita a planilha antiga, sem a aba CNC_PCQ e sem a coluna CNC", () => {
@@ -107,7 +186,20 @@ describe("plano de corte", () => {
   });
 
   it("guarda o plano de cada OP no item da árvore", () => {
-    const base = { codEstrutura: "E", nome: "CHAPA", unidade: "KG", qtdUsada: 1, apontado: 0, tarPai: "1.01", exec: "1", tarFilho: "0", grupo: "01.018", previsto: 1, apontado2: 0, codigoPrd: "01.018.9" };
+    const base = {
+      codEstrutura: "E",
+      nome: "CHAPA",
+      unidade: "KG",
+      qtdUsada: 1,
+      apontado: 0,
+      tarPai: "1.01",
+      exec: "1",
+      tarFilho: "0",
+      grupo: "01.018",
+      previsto: 1,
+      apontado2: 0,
+      codigoPrd: "01.018.9",
+    };
     const [exec] = montarArvore([
       { ...base, codOrdem: "10/25", cnc: "CNC1" },
       { ...base, codOrdem: "11/25", cnc: "CNC2" },

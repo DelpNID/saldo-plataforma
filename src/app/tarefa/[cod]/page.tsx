@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Copiar, type Celula } from "@/components/Acoes";
 import { CabecalhoArvore, NoEstrutura, OpsDaEstrutura, chaveCorte, type Cortes } from "@/components/Arvore";
 import { ControlesTarefa, TrocaCodigo } from "@/components/ControlesTarefa";
-import { Avanco, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
+import { Avanco, Comparacao, EtiquetaMaterial, EtiquetaSaldo, EtiquetaSituacao } from "@/components/Etiquetas";
 import { Rodape, Topo } from "@/components/Topo";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { avancoDe } from "@/lib/kpis";
@@ -12,7 +12,9 @@ import { num, pct } from "@/lib/formato";
 import {
   RETRABALHO,
   ROTULO_SALDO,
+  SITUACOES_RA,
   compararCodigo,
+  contarRa,
   descOrigem,
   descricaoCurta,
   filtrarArvore,
@@ -49,11 +51,33 @@ function linhasDaArvore(exec: string, raizes: NoArvore[]): Celula[][] {
   const out: Celula[][] = [];
   const visitar = (no: NoArvore, nivel: number, pai?: { pendentes: number; linhas: number }) => {
     const situacao = ROTULO_SALDO[no.status] + (pai ? ` · No pai: ${rotuloMaterial(pai.pendentes, pai.linhas).texto}` : "");
-    out.push([exec, nivel, "Estrutura", no.codEstrutura, no.nome, no.ops.map((o) => o.op).join(" "), `${num(no.efetivada, 2)} de ${num(no.planejada, 2)}`, no.pendentesTotal, situacao, ""]);
+    out.push([
+      exec,
+      nivel,
+      "Estrutura",
+      no.codEstrutura,
+      no.nome,
+      no.ops.map((o) => o.op).join(" "),
+      `${num(no.efetivada, 2)} de ${num(no.planejada, 2)}`,
+      no.pendentesTotal,
+      situacao,
+      "",
+    ]);
     for (const it of no.itens) {
       if (it.filho) visitar(it.filho, nivel + 1, it);
       else
-        out.push([exec, nivel + 1, "Componente", it.codigoPrd, it.nome, "", `Usado ${num(it.qtdUsada, 3)} ${it.unidade} · apontado ${num(it.apontado, 3)}`, it.pendentes, rotuloMaterial(it.pendentes, it.linhas).texto, it.planos.map((p) => p.plano).join(" ")]);
+        out.push([
+          exec,
+          nivel + 1,
+          "Componente",
+          it.codigoPrd,
+          it.nome,
+          "",
+          `Usado ${num(it.qtdUsada, 3)} ${it.unidade} · apontado ${num(it.apontado, 3)}`,
+          it.pendentes,
+          rotuloMaterial(it.pendentes, it.linhas).texto,
+          it.planos.map((p) => p.plano).join(" "),
+        ]);
     }
   };
   for (const r of raizes) visitar(r, 1);
@@ -76,6 +100,12 @@ export default async function TarefaPage({ params, searchParams }: Props) {
   if (!tarefa && comps.length === 0) notFound();
 
   const opsDistintas = [...new Set(comps.map((c) => c.codOrdem))];
+  // Situação da RA dos componentes do código (coluna SITUACAO_RA)
+  const ra = contarRa(comps);
+  const temRa = Object.keys(ra).length > 0;
+  const outrasRa = comps.length - (SITUACOES_RA as readonly string[]).reduce((s, k) => s + (ra[k] ?? 0), 0);
+  // % AVANÇO FABRIC do Resumo Geral (planilhas antigas não têm)
+  const fabric = carga.comFabric && tarefa ? tarefa.avancoFabric : null;
   const origens = resumirOrigens(cod, comps);
   const outras = origens.filter((o) => o.tipo === "outra").map((o) => o.tarFilho);
   const [ordens, tarefasFilhas] = await Promise.all([
@@ -92,8 +122,7 @@ export default async function TarefaPage({ params, searchParams }: Props) {
   const execs = montarArvore(comps, (op) => nomeOp.get(op));
   // Só a execução escolhida vai para a árvore: a página fica leve mesmo em tarefa com milhares de componentes
   const execAtual = execs.find((e) => e.exec === searchParams.exec) ?? execs.find((e) => e.pendentes > 0 || e.opsSemSaldo > 0) ?? execs[0];
-  const raizes =
-    visao === "arvore" && execAtual ? execAtual.raizes.map((r) => filtrarArvore(r, mostrar)).filter((r): r is NoArvore => r !== null) : [];
+  const raizes = visao === "arvore" && execAtual ? execAtual.raizes.map((r) => filtrarArvore(r, mostrar)).filter((r): r is NoArvore => r !== null) : [];
   const listaCompleta = visao === "lista" ? pendenciasDoCodigo(execs, mostrar) : [];
   const lista = listaCompleta.slice(0, MAX_LINHAS_LISTA);
 
@@ -146,9 +175,7 @@ export default async function TarefaPage({ params, searchParams }: Props) {
     const s = q.toString();
     return s ? `${base}?${s}` : base;
   };
-  const hrefMostrar = Object.fromEntries(
-    (["tudo", "nao-baixado", "sem-saldo"] as const).map((m) => [m, link({ exec: execAtual?.exec, visao, mostrar: m })]),
-  );
+  const hrefMostrar = Object.fromEntries((["tudo", "nao-baixado", "sem-saldo"] as const).map((m) => [m, link({ exec: execAtual?.exec, visao, mostrar: m })]));
 
   const exportar =
     visao === "arvore"
@@ -185,7 +212,9 @@ export default async function TarefaPage({ params, searchParams }: Props) {
           <div className="titulo">
             <h1>{titulo}</h1>
             <EtiquetaSituacao avanco={avanco} />
-            <span className="resumo">{pct(avanco)} do saldo subido</span>
+            <span className="resumo">
+              {pct(avanco)} do saldo subido{fabric !== null ? ` · fabricação ${pct(fabric)}` : ""}
+            </span>
           </div>
         </div>
       </div>
@@ -196,12 +225,18 @@ export default async function TarefaPage({ params, searchParams }: Props) {
         <section aria-label="Resumo do código de tarefa">
           <div className="stats">
             <div className="stat destaque">
-              <span className="stat-l">Avanço do saldo</span>
+              <span className="stat-l">{fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"}</span>
               <span className="stat-v">{pct(avanco)}</span>
-              <span className="barra" role="presentation">
-                <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
+              {fabric !== null ? (
+                <Comparacao saldo={avanco} fabric={fabric} previsto={previsto} realizado={realizado} />
+              ) : (
+                <span className="barra" role="presentation">
+                  <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
+                </span>
+              )}
+              <span className="stat-d">
+                {num(realizado, 1)} de {num(previsto, 1)} previsto
               </span>
-              <span className="stat-d">{num(realizado, 1)} de {num(previsto, 1)} previsto</span>
             </div>
             <div className="stat">
               <span className="stat-l">Execuções</span>
@@ -219,6 +254,17 @@ export default async function TarefaPage({ params, searchParams }: Props) {
               <span className="stat-d">
                 de {num(comps.length)} componentes · <Link href={`/pendencias?tarefa=${encodeURIComponent(cod)}`}>ver lista</Link>
               </span>
+              {temRa && (
+                <span className="stat-ra" aria-label="Situação da RA dos componentes">
+                  <span>
+                    RA pendente <b>{num(ra["RA Pendente"] ?? 0)}</b> · RA gerada <b>{num(ra["RA gerada"] ?? 0)}</b>
+                  </span>
+                  <small>
+                    {num(ra["Subconjunto (sem RA)"] ?? 0)} subconjunto (sem RA) · {num(ra["Plano sem RA"] ?? 0)} plano sem RA
+                    {outrasRa > 0 ? ` · ${num(outrasRa)} sem situação` : ""}
+                  </small>
+                </span>
+              )}
             </div>
           </div>
         </section>
@@ -247,13 +293,17 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                       {num(o.componentes)} componentes · {num(o.pendentes)} pendentes de baixa
                       {avancoFilha.has(o.tarFilho) ? ` · tarefa ${o.tarFilho} com ${pct(avancoFilha.get(o.tarFilho) ?? 0)}` : ""}
                     </span>
-                    <span className="seta" aria-hidden="true">{linkavel ? "›" : ""}</span>
+                    <span className="seta" aria-hidden="true">
+                      {linkavel ? "›" : ""}
+                    </span>
                   </>
                 );
                 return (
                   <li key={o.tarFilho}>
                     {linkavel ? (
-                      <Link className={`origem-linha ${o.tipo}`} href={`/tarefa/${encodeURIComponent(o.tarFilho)}`}>{conteudo}</Link>
+                      <Link className={`origem-linha ${o.tipo}`} href={`/tarefa/${encodeURIComponent(o.tarFilho)}`}>
+                        {conteudo}
+                      </Link>
                     ) : (
                       <div className={`origem-linha ${o.tipo}`}>{conteudo}</div>
                     )}
@@ -276,7 +326,12 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                 <ul className="exec-lista" aria-label="Execução">
                   {execs.map((e) => (
                     <li key={e.exec}>
-                      <Link className="exec-linha" aria-current={e.exec === execAtual?.exec ? "true" : undefined} href={link({ exec: e.exec, mostrar })} scroll={false}>
+                      <Link
+                        className="exec-linha"
+                        aria-current={e.exec === execAtual?.exec ? "true" : undefined}
+                        href={link({ exec: e.exec, mostrar })}
+                        scroll={false}
+                      >
                         <b>{rotuloExec(e.exec)}</b>
                         <span className="exec-pct">{pct(avancoDe(e))}</span>
                         <span className="exec-meta">
@@ -298,11 +353,13 @@ export default async function TarefaPage({ params, searchParams }: Props) {
                     {execAtual ? rotuloExec(execAtual.exec) : "Sem estruturas"}
                     {execAtual && (
                       <span className="meta">
-                        {pct(avancoDe(execAtual))} do saldo subido ({num(execAtual.realizado, 1)} de {num(execAtual.previsto, 1)}) · {num(execAtual.estruturas)} estruturas ·{" "}
-                        {num(execAtual.opsSemSaldo)} OPs sem saldo completo · {num(execAtual.pendentes)} pendentes de baixa
+                        {pct(avancoDe(execAtual))} do saldo subido ({num(execAtual.realizado, 1)} de {num(execAtual.previsto, 1)}) · {num(execAtual.estruturas)}{" "}
+                        estruturas · {num(execAtual.opsSemSaldo)} OPs sem saldo completo · {num(execAtual.pendentes)} pendentes de baixa
                         {planosExec.length > 0 &&
                           ` · ${num(planosExec.length)} ${planosExec.length === 1 ? "plano" : "planos"} de corte` +
-                            (cortesPendentes > 0 ? ` (${num(cortesPendentes)} ${cortesPendentes === 1 ? "OP" : "OPs"} sem corte apontado)` : ", todos cortados")}
+                            (cortesPendentes > 0
+                              ? ` (${num(cortesPendentes)} ${cortesPendentes === 1 ? "OP" : "OPs"} sem corte apontado)`
+                              : ", todos cortados")}
                       </span>
                     )}
                   </p>

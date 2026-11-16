@@ -29,6 +29,8 @@ export async function gravarCarga(prisma: PrismaClient, c: CargaPreparada, arqui
       totalRealizado: c.totais.realizado,
       totalExecucoes: c.totais.execucoes,
       totalExecPend: c.totais.execPend,
+      comFabric: c.comFabric,
+      totalEsperado: c.esperado,
     },
   });
   const cargaId = carga.id;

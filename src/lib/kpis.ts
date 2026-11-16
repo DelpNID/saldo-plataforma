@@ -6,6 +6,7 @@ import { situacaoTarefa, statusCorte, statusSaldo } from "./regras";
 export interface Kpis {
   previsto: number;
   realizado: number;
+  esperado: number | null; // saldo que já deveria ter subido pela fabricação
   execucoes: number;
   execPend: number;
   tarefas: number;
@@ -21,7 +22,7 @@ export interface Kpis {
 }
 
 export interface EntradaKpis {
-  totais: { previsto: number; realizado: number; execucoes: number; execPend: number };
+  totais: { previsto: number; realizado: number; esperado: number | null; execucoes: number; execPend: number };
   tarefas: { avanco: number }[];
   componentes: { codOrdem: string; previsto: number; apontado2: number; apontado: number }[];
   planos: { qtdPrev: number; qtdApont: number }[];
@@ -72,6 +73,25 @@ export function serieDiaria<T extends Ponto>(pontos: T[]): T[] {
 
 export const avancoDe = (p: { previsto: number; realizado: number }) => (p.previsto > 0 ? p.realizado / p.previsto : 0);
 
+// ---------- Saldo × Fabricação ----------
+// % AVANÇO FABRIC (planilha) = guias do código com 100%. Vezes o previsto, dá o saldo que já deveria ter subido.
+// No grupo e no projeto: soma do esperado ÷ soma do previsto (mesma conta do avanço do saldo).
+
+/** Avanço da fabricação de um conjunto: esperado ÷ previsto. */
+export const fabricDe = (p: { previsto: number; esperado: number }) => (p.previsto > 0 ? p.esperado / p.previsto : 0);
+
+export type Ritmo = "atraso" | "em-dia" | "a-frente";
+const TOLERANCIA_PP = 0.5; // até meio ponto percentual de diferença conta como "acompanha"
+
+/** Compara o avanço do saldo com o da fabricação. pp = diferença em pontos percentuais (sempre positiva). */
+export function ritmoSaldo(saldo: number, fabric: number): { ritmo: Ritmo; pp: number } {
+  const pp = (fabric - saldo) * 100;
+  return { ritmo: pp > TOLERANCIA_PP ? "atraso" : pp < -TOLERANCIA_PP ? "a-frente" : "em-dia", pp: Math.abs(pp) };
+}
+
+/** Quantidade que falta subir para o saldo alcançar a fabricação (0 quando já alcançou). */
+export const atrasoQtd = (p: { realizado: number; esperado: number }) => Math.max(0, p.esperado - p.realizado);
+
 /** Lê a carga do banco e calcula os KPIs. */
 export async function kpisDoBanco(prisma: PrismaClient, cargaId: number): Promise<Kpis> {
   const [carga, tarefas, componentes, planos] = await Promise.all([
@@ -81,7 +101,13 @@ export async function kpisDoBanco(prisma: PrismaClient, cargaId: number): Promis
     prisma.planoCorte.findMany({ where: { cargaId }, select: { qtdPrev: true, qtdApont: true } }),
   ]);
   return calcularKpis({
-    totais: { previsto: carga.totalPrevisto, realizado: carga.totalRealizado, execucoes: carga.totalExecucoes, execPend: carga.totalExecPend },
+    totais: {
+      previsto: carga.totalPrevisto,
+      realizado: carga.totalRealizado,
+      esperado: carga.comFabric ? carga.totalEsperado : null,
+      execucoes: carga.totalExecucoes,
+      execPend: carga.totalExecPend,
+    },
     tarefas,
     componentes,
     planos,
@@ -125,6 +151,7 @@ export interface CodigoBusca {
   componentes: number;
   execucoes: number;
   execPend: number;
+  fabric: number; // 0 a 1
 }
 
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -149,8 +176,9 @@ export function resumirSelecao(lista: CodigoBusca[]) {
       componentes: a.componentes + t.componentes,
       execucoes: a.execucoes + t.execucoes,
       execPend: a.execPend + t.execPend,
+      esperado: a.esperado + t.fabric * t.previsto,
     }),
-    { previsto: 0, realizado: 0, pendentes: 0, componentes: 0, execucoes: 0, execPend: 0 },
+    { previsto: 0, realizado: 0, pendentes: 0, componentes: 0, execucoes: 0, execPend: 0, esperado: 0 },
   );
-  return { ...s, codigos: lista.length, desenhos: new Set(lista.map((t) => t.desenho)).size, avanco: avancoDe(s) };
+  return { ...s, codigos: lista.length, desenhos: new Set(lista.map((t) => t.desenho)).size, avanco: avancoDe(s), fabric: fabricDe(s) };
 }

@@ -12,6 +12,7 @@ import {
   type ItemArvore,
   type NoArvore,
   type StatusCorte,
+  textoRa,
 } from "@/lib/regras";
 
 /** Linha da aba CNC_PCQ: a OP dentro do plano de corte. */
@@ -110,6 +111,7 @@ function Item({ it, pai, cortes }: { it: ItemArvore; pai: string; cortes?: Corte
         <span className="item-qtd">
           Usado {num(it.qtdUsada, 3)} {it.unidade} · apontado {num(it.apontado, 3)}
         </span>
+        {Object.keys(it.ra).length > 0 && <span className={`item-ra${it.ra["RA Pendente"] ? " item-ra-pend" : ""}`}>{textoRa(it.ra)}</span>}
         {outraTarefa && (
           <Link className="item-link" href={`/tarefa/${encodeURIComponent(it.tarFilho)}`}>
             {it.tarFilho === RETRABALHO ? "Vem do retrabalho ›" : `Fabricado na tarefa ${it.tarFilho} ›`}
@@ -156,7 +158,10 @@ function Corte({ op, plano, cortes, unidade, mostrarOp }: { op: string; plano: s
     );
   }
   const st = statusCorte(info.qtdPrev, info.qtdApont);
-  const meta = [`${mostrarOp ? `OP ${op}: ` : ""}corte ${num(info.qtdApont)} de ${num(info.qtdPrev)} pç`, info.statusOp ? `OP ${info.statusOp.toLowerCase()}` : ""]
+  const meta = [
+    `${mostrarOp ? `OP ${op}: ` : ""}corte ${num(info.qtdApont)} de ${num(info.qtdPrev)} pç`,
+    info.statusOp ? `OP ${info.statusOp.toLowerCase()}` : "",
+  ]
     .filter(Boolean)
     .join(" · ");
   return (

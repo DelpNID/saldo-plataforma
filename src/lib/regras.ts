@@ -170,6 +170,7 @@ export interface CompBase {
   previsto: number;
   apontado2: number;
   cnc?: string | null;
+  situacaoRa?: string | null;
 }
 
 export interface Origem {
@@ -232,11 +233,7 @@ export function origemDesce(tipo: TipoOrigem): boolean {
  * Todos os caminhos que dá para abrir abaixo de um código ("1.05>1.30", "1.05>1.30>2.10"...),
  * sem repetir código no mesmo caminho (evita laço) e até `maxNivel` níveis.
  */
-export function caminhosDaLinhagem(
-  cod: string,
-  filhas: (c: string) => { tarFilho: string; tipo: TipoOrigem }[],
-  maxNivel = 12,
-): string[] {
+export function caminhosDaLinhagem(cod: string, filhas: (c: string) => { tarFilho: string; tipo: TipoOrigem }[], maxNivel = 12): string[] {
   const out: string[] = [];
   const descer = (caminho: string[]) => {
     if (caminho.length >= maxNivel) return;
@@ -285,6 +282,7 @@ export interface ItemArvore {
   linhas: number;
   pendentes: number; // linhas com APONTADO = 0
   planos: { op: string; plano: string }[]; // plano de corte (CNC ou PA/PC) de cada OP onde o item entra
+  ra: Record<string, number>; // SITUACAO_RA das linhas do item
   filho?: NoArvore; // quando o item é uma estrutura fabricada nesta execução
 }
 
@@ -351,13 +349,26 @@ export function montarArvore(comps: CompBase[], nomeOp: (op: string) => string |
       for (const r of rows) {
         let it = itensMap.get(r.codigoPrd);
         if (!it) {
-          it = { codigoPrd: r.codigoPrd, nome: r.nome, unidade: r.unidade, grupo: r.grupo, tarFilho: r.tarFilho, qtdUsada: 0, apontado: 0, linhas: 0, pendentes: 0, planos: [] };
+          it = {
+            codigoPrd: r.codigoPrd,
+            nome: r.nome,
+            unidade: r.unidade,
+            grupo: r.grupo,
+            tarFilho: r.tarFilho,
+            qtdUsada: 0,
+            apontado: 0,
+            linhas: 0,
+            pendentes: 0,
+            planos: [],
+            ra: {},
+          };
           itensMap.set(r.codigoPrd, it);
         }
         it.qtdUsada += r.qtdUsada;
         it.apontado += r.apontado;
         it.linhas += 1;
         if (statusMaterial(r.apontado) === "pendente") it.pendentes += 1;
+        if (r.situacaoRa) it.ra[r.situacaoRa] = (it.ra[r.situacaoRa] ?? 0) + 1;
         for (const plano of planosDaColuna(r.cnc)) {
           if (!it.planos.some((p) => p.op === r.codOrdem && p.plano === plano)) it.planos.push({ op: r.codOrdem, plano });
         }
@@ -387,7 +398,8 @@ export function montarArvore(comps: CompBase[], nomeOp: (op: string) => string |
     if (codRaizes.length === 0 && estruturas.size > 0) codRaizes = [[...estruturas.keys()].sort()[0]];
     const raizes = codRaizes.map((c) => montar(c, new Set()));
     const opsDistintas = new Map<string, OpSaldo>();
-    for (const c of linhas) opsDistintas.set(c.codOrdem, { op: c.codOrdem, planejada: c.previsto, efetivada: c.apontado2, status: statusSaldo(c.previsto, c.apontado2) });
+    for (const c of linhas)
+      opsDistintas.set(c.codOrdem, { op: c.codOrdem, planejada: c.previsto, efetivada: c.apontado2, status: statusSaldo(c.previsto, c.apontado2) });
     execs.push({
       exec,
       raizes,
@@ -511,4 +523,28 @@ export function pendenciasDoCodigo(execs: Execucao[], filtro: FiltroMostrar): Li
   };
   for (const e of execs) for (const r of e.raizes) visitar(e.exec, r, undefined);
   return linhas;
+}
+
+// ---------- Situação da RA (coluna SITUACAO_RA da aba Componentes) ----------
+
+/** Situações conhecidas, na ordem em que aparecem na tela. */
+export const SITUACOES_RA = ["RA Pendente", "RA gerada", "Subconjunto (sem RA)", "Plano sem RA"] as const;
+
+/** Conta os componentes por situação da RA. Vazio quando a planilha não tem a coluna. */
+export function contarRa(comps: { situacaoRa?: string | null }[]): Record<string, number> {
+  const c: Record<string, number> = {};
+  for (const x of comps) if (x.situacaoRa) c[x.situacaoRa] = (c[x.situacaoRa] ?? 0) + 1;
+  return c;
+}
+
+/** Texto curto da RA de um item da árvore: "RA Pendente" ou "RA Pendente 2 · RA gerada 1". */
+export function textoRa(ra: Record<string, number>): string {
+  const chaves = Object.keys(ra).sort((a, b) => ordemRa(a) - ordemRa(b));
+  if (chaves.length === 1) return chaves[0];
+  return chaves.map((k) => `${k} ${ra[k]}`).join(" · ");
+}
+
+function ordemRa(s: string): number {
+  const i = (SITUACOES_RA as readonly string[]).indexOf(s);
+  return i < 0 ? 99 : i;
 }

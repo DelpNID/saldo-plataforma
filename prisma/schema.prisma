@@ -23,6 +23,8 @@ model Carga {
   totalRealizado Float
   totalExecucoes Float
   totalExecPend  Float
+  comFabric      Boolean      @default(false) // planilha com a coluna % AVANÇO FABRIC
+  totalEsperado  Float        @default(0) // soma de % AVANÇO FABRIC × QTD PREVISTO
   tarefas        Tarefa[]
   componentes    Componente[]
   ordens         Ordem[]
@@ -45,6 +47,7 @@ model Tarefa {
   qtdPrevisto   Float
   qtdRealizada  Float
   avanco        Float // 0 a 1
+  avancoFabric  Float   @default(0) // 0 a 1: % AVANÇO FABRIC (guias com 100%)
   prioridade    String?
   totalComp     Int     @default(0)
   pendMaterial  Int     @default(0) // componentes com APONTADO = 0
@@ -75,6 +78,7 @@ model Componente {
   apontado2    Float // QTDE EFETIVADA da OP
   lote         String?
   cnc          String? // coluna CNC: plano de corte da OP (CNC... chapa, PA... tubo/perfil/barra)
+  situacaoRa   String? // SITUACAO_RA: Subconjunto (sem RA), RA Pendente, RA gerada, Plano sem RA
 
   @@index([cargaId, tarPai])
   @@index([cargaId, apontado])
@@ -137,6 +141,7 @@ model Historico {
   arquivo         String
   previsto        Float
   realizado       Float
+  esperado        Float? // saldo que já deveria ter subido pela fabricação (vazio: planilha sem % AVANÇO FABRIC)
   execucoes       Float
   execPend        Float
   tarefas         Int

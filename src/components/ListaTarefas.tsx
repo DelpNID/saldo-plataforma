@@ -15,13 +15,14 @@ export interface TarefaResumo {
   previsto: number;
   realizado: number;
   avanco: number;
+  fabric: number | null; // % AVANÇO FABRIC (null: planilha sem a coluna)
   pendMaterial: number;
   totalComp: number;
   opsTotal: number;
   opsComSaldo: number;
 }
 
-type Coluna = "codigo" | "avanco" | "execPend" | "opsComSaldo" | "pendMaterial";
+type Coluna = "codigo" | "avanco" | "atraso" | "execPend" | "opsComSaldo" | "pendMaterial";
 type Direcao = "ascending" | "descending";
 const SITUACOES: SituacaoTarefa[] = ["sem-avanco", "andamento", "concluida"];
 
@@ -29,6 +30,7 @@ const SITUACOES: SituacaoTarefa[] = ["sem-avanco", "andamento", "concluida"];
 const DIRECAO_INICIAL: Record<Coluna, Direcao> = {
   codigo: "ascending",
   avanco: "ascending",
+  atraso: "descending",
   execPend: "descending",
   opsComSaldo: "descending",
   pendMaterial: "descending",
@@ -36,6 +38,7 @@ const DIRECAO_INICIAL: Record<Coluna, Direcao> = {
 
 const VALOR: Record<Exclude<Coluna, "codigo">, (t: TarefaResumo) => number> = {
   avanco: (t) => t.avanco,
+  atraso: (t) => (t.fabric ?? 0) - t.avanco, // pontos atrás da fabricação
   execPend: (t) => t.execPend,
   opsComSaldo: (t) => t.opsComSaldo,
   pendMaterial: (t) => t.pendMaterial,
@@ -58,6 +61,7 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
     return () => ro.disconnect();
   }, []);
 
+  const comFabric = tarefas.some((t) => t.fabric !== null);
   const grupos = useMemo(() => [...new Set(tarefas.map((t) => grupoTarefa(t.cod)))].sort(compararCodigo), [tarefas]);
   const contagem = useMemo(() => {
     const c: Record<string, number> = { todas: tarefas.length };
@@ -105,13 +109,26 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
           <p>Clique num código para abrir as tarefas filhas, as estruturas e os componentes.</p>
         </div>
         <div className="filtros">
-          <label className="sr" htmlFor="busca">Buscar código de tarefa</label>
-          <input id="busca" className="campo busca" type="search" placeholder="Buscar por código, descrição ou desenho" value={busca} onChange={(e) => setBusca(e.target.value)} />
-          <label className="sr" htmlFor="grupo">Grupo</label>
+          <label className="sr" htmlFor="busca">
+            Buscar código de tarefa
+          </label>
+          <input
+            id="busca"
+            className="campo busca"
+            type="search"
+            placeholder="Buscar por código, descrição ou desenho"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+          <label className="sr" htmlFor="grupo">
+            Grupo
+          </label>
           <select id="grupo" className="campo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
             <option value="todos">Todos os grupos</option>
             {grupos.map((g) => (
-              <option key={g} value={g}>Grupo {g}</option>
+              <option key={g} value={g}>
+                Grupo {g}
+              </option>
             ))}
           </select>
           <div className="chips" role="group" aria-label="Situação">
@@ -128,7 +145,15 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
         <div className="lista-cab">
           {botaoOrdena("codigo", "Código de tarefa")}
           <span>Situação</span>
-          {botaoOrdena("avanco", "Avanço do saldo")}
+          {comFabric ? (
+            <span className="cab-duplo">
+              {botaoOrdena("avanco", "Saldo")}
+              <span aria-hidden="true">×</span>
+              {botaoOrdena("atraso", "Atraso")}
+            </span>
+          ) : (
+            botaoOrdena("avanco", "Avanço do saldo")
+          )}
           {botaoOrdena("execPend", "Execuções")}
           {botaoOrdena("opsComSaldo", "OPs com saldo")}
           {botaoOrdena("pendMaterial", "Pendentes de baixa")}
@@ -138,7 +163,9 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
           <div className="vazio">
             <b>Nenhum código de tarefa com esses filtros</b>
             <span>Mude a busca, o grupo ou a situação.</span>
-            <button className="btn sec" type="button" onClick={limpar}>Limpar filtros</button>
+            <button className="btn sec" type="button" onClick={limpar}>
+              Limpar filtros
+            </button>
           </div>
         ) : (
           <ul className="lista">
@@ -153,7 +180,7 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
                   <span>
                     <EtiquetaSituacao avanco={t.avanco} />
                   </span>
-                  <Avanco valor={t.avanco} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
+                  <Avanco valor={t.avanco} fabric={t.fabric} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
                   <span className="num-l">
                     <b>{num(t.execucoes)}</b>
                     <small>{num(t.execPend, 1)} pendentes</small>
@@ -166,14 +193,18 @@ export function ListaTarefas({ tarefas, children }: { tarefas: TarefaResumo[]; c
                     <b>{num(t.pendMaterial)}</b>
                     <small>de {num(t.totalComp)} componentes</small>
                   </span>
-                  <span className="seta" aria-hidden="true">›</span>
+                  <span className="seta" aria-hidden="true">
+                    ›
+                  </span>
                 </Link>
               </li>
             ))}
           </ul>
         )}
       </div>
-      <p className="nota" aria-live="polite">Mostrando {num(visiveis.length)} de {num(tarefas.length)} códigos de tarefa.</p>
+      <p className="nota" aria-live="polite">
+        Mostrando {num(visiveis.length)} de {num(tarefas.length)} códigos de tarefa.
+      </p>
       {children}
     </section>
   );

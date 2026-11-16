@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { EtiquetaSituacao } from "./Etiquetas";
+import { Comparacao, EtiquetaSituacao } from "./Etiquetas";
 import { num, pct } from "@/lib/formato";
 import { buscarCodigos, resumirSelecao, type CodigoBusca } from "@/lib/kpis";
 
 const MAX_LISTA = 30;
 
 /** "Como está o avanço de…": filtra por desenho, código de tarefa ou descrição do equipamento e soma o recorte. */
-export function BuscaGestao({ codigos, inicial = "" }: { codigos: CodigoBusca[]; inicial?: string }) {
+export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codigos: CodigoBusca[]; inicial?: string; comFabric?: boolean }) {
   const [q, setQ] = useState(inicial);
   const achados = useMemo(() => buscarCodigos(codigos, q), [codigos, q]);
   const r = useMemo(() => resumirSelecao(achados), [achados]);
@@ -46,9 +46,13 @@ export function BuscaGestao({ codigos, inicial = "" }: { codigos: CodigoBusca[];
               {num(r.codigos)} {r.codigos === 1 ? "código de tarefa" : "códigos de tarefa"} · {num(r.desenhos)} {r.desenhos === 1 ? "desenho" : "desenhos"}
             </span>
           </div>
-          <span className="barra" role="presentation">
-            <span className={r.avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, r.avanco) * 100}%` }} />
-          </span>
+          {comFabric ? (
+            <Comparacao saldo={r.avanco} fabric={r.fabric} previsto={r.previsto} realizado={r.realizado} />
+          ) : (
+            <span className="barra" role="presentation">
+              <span className={r.avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, r.avanco) * 100}%` }} />
+            </span>
+          )}
           <span className="stat-d">
             {num(r.realizado, 1)} de {num(r.previsto, 1)} previsto · faltam {num(Math.max(0, r.previsto - r.realizado), 1)}
           </span>
@@ -76,7 +80,8 @@ export function BuscaGestao({ codigos, inicial = "" }: { codigos: CodigoBusca[];
                   <span className="g-top-n mono">{t.desenho}</span>
                   <EtiquetaSituacao avanco={t.avanco} />
                   <span className="g-pct">
-                    <b>{pct(t.avanco)}</b> · {num(t.realizado, 1)} de {num(t.previsto, 1)} · {num(t.pendentes)} pend.
+                    <b>{pct(t.avanco)}</b>
+                    {comFabric ? ` × fabric. ${pct(t.fabric)}` : ""} · {num(t.realizado, 1)} de {num(t.previsto, 1)} · {num(t.pendentes)} pend.
                   </span>
                 </Link>
               </li>

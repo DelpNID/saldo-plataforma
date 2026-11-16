@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Rodape, Topo } from "@/components/Topo";
+import { Comparacao } from "@/components/Etiquetas";
 import { ListaTarefas, type TarefaResumo } from "@/components/ListaTarefas";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { num, pct } from "@/lib/formato";
@@ -17,7 +18,9 @@ export default async function Painel() {
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
             <span>Importe a planilha de saldo em Atualizar para os dados aparecerem aqui.</span>
-            <Link className="btn sec" href="/importar">Ir para Atualizar</Link>
+            <Link className="btn sec" href="/importar">
+              Ir para Atualizar
+            </Link>
           </div>
         </main>
       </>
@@ -33,6 +36,7 @@ export default async function Painel() {
   ]);
 
   const avanco = carga.totalPrevisto > 0 ? carga.totalRealizado / carga.totalPrevisto : 0;
+  const fabric = carga.totalPrevisto > 0 ? carga.totalEsperado / carga.totalPrevisto : 0;
   const situacoes = tarefas.map((t) => situacaoTarefa(t.avanco));
   const concluidas = situacoes.filter((s) => s === "concluida").length;
   const semAvanco = situacoes.filter((s) => s === "sem-avanco").length;
@@ -46,6 +50,7 @@ export default async function Painel() {
     previsto: t.qtdPrevisto,
     realizado: t.qtdRealizada,
     avanco: t.avanco,
+    fabric: carga.comFabric ? t.avancoFabric : null,
     pendMaterial: t.pendMaterial,
     totalComp: t.totalComp,
     opsTotal: t.opsTotal,
@@ -69,12 +74,18 @@ export default async function Painel() {
         <section aria-label="Resumo do projeto">
           <div className="stats">
             <div className="stat destaque">
-              <span className="stat-l">Avanço do saldo</span>
+              <span className="stat-l">{carga.comFabric ? "Avanço do saldo × fabricação" : "Avanço do saldo"}</span>
               <span className="stat-v">{pct(avanco)}</span>
-              <span className="barra" role="presentation">
-                <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
+              {carga.comFabric ? (
+                <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
+              ) : (
+                <span className="barra" role="presentation">
+                  <span className={avanco >= 0.9999 ? "concluida" : undefined} style={{ width: `${Math.min(1, avanco) * 100}%` }} />
+                </span>
+              )}
+              <span className="stat-d">
+                {num(carga.totalRealizado, 1)} de {num(carga.totalPrevisto, 1)} previsto
               </span>
-              <span className="stat-d">{num(carga.totalRealizado, 1)} de {num(carga.totalPrevisto, 1)} previsto</span>
             </div>
             <div className="stat">
               <span className="stat-l">Códigos de tarefa</span>
@@ -91,7 +102,9 @@ export default async function Painel() {
             <div className="stat">
               <span className="stat-l">Pendentes de baixa</span>
               <span className="stat-v">{num(pendComp)}</span>
-              <span className="stat-d">de {num(totalComp)} componentes · <Link href="/pendencias">ver lista</Link></span>
+              <span className="stat-d">
+                de {num(totalComp)} componentes · <Link href="/pendencias">ver lista</Link>
+              </span>
             </div>
           </div>
         </section>

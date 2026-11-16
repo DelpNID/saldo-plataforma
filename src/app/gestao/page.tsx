@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
-import { EtiquetaSituacao } from "@/components/Etiquetas";
+import { Comparacao, EtiquetaSituacao, TextoRitmo } from "@/components/Etiquetas";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { dataCurta, num, pct, quando } from "@/lib/formato";
-import { avancoDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
+import { atrasoQtd, avancoDe, fabricDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
 import { compararCodigo, descricaoCurta, grupoTarefa } from "@/lib/regras";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +66,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         descricao: true,
         desenho: true,
         avanco: true,
+        avancoFabric: true,
         qtdPrevisto: true,
         qtdRealizada: true,
         pendMaterial: true,
@@ -93,11 +94,12 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
   }));
 
   // Avanço por grupo de código (1.xx, 2.xx...)
-  const grupos = new Map<string, { previsto: number; realizado: number; codigos: number }>();
+  const grupos = new Map<string, { previsto: number; realizado: number; esperado: number; codigos: number }>();
   for (const t of tarefas) {
-    const g = grupos.get(grupoTarefa(t.codTarefa)) ?? { previsto: 0, realizado: 0, codigos: 0 };
+    const g = grupos.get(grupoTarefa(t.codTarefa)) ?? { previsto: 0, realizado: 0, esperado: 0, codigos: 0 };
     g.previsto += t.qtdPrevisto;
     g.realizado += t.qtdRealizada;
+    g.esperado += t.avancoFabric * t.qtdPrevisto;
     g.codigos += 1;
     grupos.set(grupoTarefa(t.codTarefa), g);
   }
@@ -105,6 +107,19 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
 
   const maiorSaldo = [...tarefas].sort((a, b) => b.qtdPrevisto - b.qtdRealizada - (a.qtdPrevisto - a.qtdRealizada)).slice(0, 5);
   const maisPendentes = [...tarefas].sort((a, b) => b.pendMaterial - a.pendMaterial).slice(0, 5);
+  // Saldo × Fabricação: quanto o saldo está atrás das guias que já fecharam 100%
+  const fabric = carga.comFabric ? fabricDe({ previsto: carga.totalPrevisto, esperado: carga.totalEsperado }) : null;
+  const falta = (t: { qtdRealizada: number; qtdPrevisto: number; avancoFabric: number }) =>
+    atrasoQtd({ realizado: t.qtdRealizada, esperado: t.avancoFabric * t.qtdPrevisto });
+  const maiorAtraso = carga.comFabric
+    ? tarefas
+        .filter((t) => falta(t) > 0)
+        .sort((a, b) => falta(b) - falta(a))
+        .slice(0, 5)
+    : [];
+  const codigosEmAtraso = carga.comFabric ? tarefas.filter((t) => falta(t) > 0).length : 0;
+  const pctCodigo = (t: { avanco: number; avancoFabric: number }) =>
+    carga.comFabric ? `saldo ${pct(t.avanco)} · fabric. ${pct(t.avancoFabric)}` : pct(t.avanco);
   const situacoes = [
     { rotulo: "Sem avanço", n: atual.semAvanco, classe: "pend" },
     { rotulo: "Em andamento", n: atual.andamento, classe: "parcial" },
@@ -140,6 +155,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
 
       <main className="g-main">
         <BuscaGestao
+          comFabric={carga.comFabric}
           inicial={(searchParams.q ?? "").slice(0, 80)}
           codigos={tarefas
             .map((t) => ({
@@ -153,16 +169,23 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
               componentes: t.totalComp,
               execucoes: t.execucoes,
               execPend: t.execPend,
+              fabric: t.avancoFabric,
             }))
             .sort((a, b) => compararCodigo(a.cod, b.cod))}
         />
         <section className="card g-hero" aria-label="Avanço do saldo">
-          <span className="stat-l">Avanço do saldo · {carga.projeto}</span>
+          <span className="stat-l">
+            {fabric !== null ? "Avanço do saldo × fabricação" : "Avanço do saldo"} · {carga.projeto}
+          </span>
           <div className="g-hero-v">
             <b>{pct(avanco)}</b>
             <Variacao valor={ontem ? (avanco - avancoDe(ontem)) * 100 : null} unidade="pp" melhorSeSobe desde={ontem && dataCurta(ontem.dataRef).slice(0, 5)} />
           </div>
-          <Barra valor={avanco} />
+          {fabric !== null ? (
+            <Comparacao saldo={avanco} fabric={fabric} previsto={carga.totalPrevisto} realizado={carga.totalRealizado} />
+          ) : (
+            <Barra valor={avanco} />
+          )}
           <span className="stat-d">
             {num(atual.realizado, 1)} de {num(atual.previsto, 1)} previsto · faltam {num(Math.max(0, atual.previsto - atual.realizado), 1)}
           </span>
@@ -213,6 +236,35 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
             <GraficoEvolucao pontos={pontos} />
           </section>
 
+          {fabric !== null && (
+            <section className="card g-bloco" aria-labelledby="g-atraso">
+              <h2 id="g-atraso">Maior atraso do saldo</h2>
+              <p className="nota">
+                Códigos com o saldo mais atrás da fabricação (guias com 100%). {num(codigosEmAtraso)} de {num(tarefas.length)} códigos estão atrás.
+              </p>
+              {maiorAtraso.length === 0 ? (
+                <p className="g-vazio">Nenhum código com o saldo atrás da fabricação.</p>
+              ) : (
+                <ol className="g-top">
+                  {maiorAtraso.map((t) => (
+                    <li key={t.codTarefa}>
+                      <Link href={`/tarefa/${encodeURIComponent(t.codTarefa)}`}>
+                        <span className="g-top-t">
+                          <b>{t.codTarefa}</b> {descricaoCurta(t.descricao)}
+                        </span>
+                        <span className="g-top-n">
+                          faltam <b>{num(falta(t), 1)}</b> para acompanhar
+                        </span>
+                        <TextoRitmo curto saldo={t.avanco} fabric={t.avancoFabric} />
+                        <span className="g-pct">{pctCodigo(t)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          )}
+
           <section className="card g-bloco" aria-labelledby="g-situacao">
             <h2 id="g-situacao">Situação dos códigos de tarefa</h2>
             <p className="nota">{num(atual.tarefas)} códigos de tarefa no projeto.</p>
@@ -231,7 +283,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           </section>
 
           <section className="card g-bloco" aria-labelledby="g-grupos">
-            <h2 id="g-grupos">Avanço por grupo de código</h2>
+            <h2 id="g-grupos">{fabric !== null ? "Saldo × fabricação por grupo de código" : "Avanço por grupo de código"}</h2>
             <ul className="g-linhas">
               {porGrupo.map(([g, v]) => (
                 <li key={g}>
@@ -240,7 +292,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                   <span className="g-pct">
                     {num(v.realizado, 1)} de {num(v.previsto, 1)} · {num(v.codigos)} códigos
                   </span>
-                  <Barra valor={avancoDe(v)} />
+                  {fabric !== null ? <Comparacao compacto saldo={avancoDe(v)} fabric={fabricDe(v)} /> : <Barra valor={avancoDe(v)} />}
                 </li>
               ))}
             </ul>
@@ -260,7 +312,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                       faltam <b>{num(t.qtdPrevisto - t.qtdRealizada, 1)}</b> de {num(t.qtdPrevisto, 1)}
                     </span>
                     <EtiquetaSituacao avanco={t.avanco} />
-                    <span className="g-pct">{pct(t.avanco)}</span>
+                    <span className="g-pct">{pctCodigo(t)}</span>
                   </Link>
                 </li>
               ))}
@@ -281,7 +333,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                       <b>{num(t.pendMaterial)}</b> de {num(t.totalComp)} componentes
                     </span>
                     <EtiquetaSituacao avanco={t.avanco} />
-                    <span className="g-pct">{pct(t.avanco)}</span>
+                    <span className="g-pct">{pctCodigo(t)}</span>
                   </Link>
                 </li>
               ))}

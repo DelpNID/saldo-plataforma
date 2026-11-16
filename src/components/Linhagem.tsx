@@ -17,6 +17,7 @@ export interface FilhaLinhagem {
 }
 
 export interface CodigoLinhagem {
+  fabric: number | null; // % AVANÇO FABRIC
   cod: string;
   descricao: string;
   avanco: number;
@@ -37,7 +38,7 @@ interface Props {
   /** Tarefas filhas de cada código (inclui RETRABALHO), as mesmas de "De onde vem o saldo". */
   filhasPorCodigo: Record<string, FilhaLinhagem[]>;
   /** Avanço próprio de cada código de tarefa, para mostrar ao lado quando ele aparece como filha. */
-  avancoPorCodigo: Record<string, { avanco: number; previsto: number; realizado: number }>;
+  avancoPorCodigo: Record<string, { avanco: number; previsto: number; realizado: number; fabric: number | null }>;
   total: number;
   abrir?: string[]; // códigos que já começam com as tarefas filhas abertas (?abrir=1.18)
   children?: ReactNode;
@@ -136,6 +137,12 @@ export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, ab
                       <br />
                       <span className="lin-proprio">
                         Código {f.tarFilho}: <b>{pct(proprio.avanco)}</b> do saldo ({num(proprio.realizado, 1)} de {num(proprio.previsto, 1)})
+                        {proprio.fabric !== null && (
+                          <>
+                            {" "}
+                            × fabricação <b>{pct(proprio.fabric)}</b>
+                          </>
+                        )}
                       </span>
                     </>
                   )}
@@ -226,7 +233,7 @@ export function Linhagem({ desenhos, filhasPorCodigo, avancoPorCodigo, total, ab
                             <span>{t.descricao}</span>
                           </span>
                           <EtiquetaSituacao avanco={t.avanco} />
-                          <Avanco valor={t.avanco} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
+                          <Avanco valor={t.avanco} fabric={t.fabric} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)}`} />
                           <span className="seta" aria-hidden="true">
                             ›
                           </span>

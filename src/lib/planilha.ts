@@ -16,14 +16,16 @@ type Mapa = Record<string, string>;
 const COLS_RESUMO: Mapa = {
   DESENHO: "desenho",
   CODTAREFA: "codTarefa",
-  "DESCRIÇÃO": "descricao",
-  "EXECUÇÕES": "execucoes",
+  DESCRIÇÃO: "descricao",
+  EXECUÇÕES: "execucoes",
   "EXEC. PEND": "execPend",
   "QTD PREVISTO": "qtdPrevisto",
   "QTD REALIZADA": "qtdRealizada",
   "% AVANÇO SALDO": "avanco",
-  PRIORIDADE: "prioridade",
 };
+// % AVANÇO FABRIC: guias do código com 100% (pela quantidade prevista). Planilha antiga não tem.
+// PRIORIDADE saiu na revisão de 16/11: continua lida quando existir.
+const COLS_RESUMO_OPCIONAIS: Mapa = { "% AVANÇO FABRIC": "avancoFabric", "% AVANÇO FABRICAÇÃO": "avancoFabric", PRIORIDADE: "prioridade" };
 
 const COLS_COMP: Mapa = {
   CODORDEM: "codOrdem",
@@ -45,12 +47,13 @@ const COLS_COMP: Mapa = {
   LOTE: "lote",
 };
 // Colunas novas: a planilha antiga não tem e continua valendo
-const COLS_COMP_OPCIONAIS: Mapa = { CNC: "cnc" };
+// SITUACAO_RA: Subconjunto (sem RA), RA Pendente, RA gerada, Plano sem RA. O número da RA não é lido.
+const COLS_COMP_OPCIONAIS: Mapa = { CNC: "cnc", SITUACAO_RA: "situacaoRa" };
 
 const COLS_DADOS: Mapa = {
   OP: "op",
   TAG: "tag",
-  "DESCRIÇÃOOP": "descricao",
+  DESCRIÇÃOOP: "descricao",
   DESENHO: "desenho",
   STATUS: "status",
   "HORAS PREVISTA": "horasPrevistas",
@@ -145,7 +148,7 @@ export function dataExcel(v: unknown): string | null {
 function lerResumo(linhas: Linhas) {
   const h = acharCabecalho(linhas, COLS_RESUMO, "Resumo Geral");
   if (h === 0) throw new ErroPlanilha('A aba "Resumo Geral" precisa da linha de totais acima do cabeçalho.');
-  const pos = posicoes(linhas[h], COLS_RESUMO);
+  const pos = posicoes(linhas[h], COLS_RESUMO, COLS_RESUMO_OPCIONAIS);
   const tarefas: Record<string, unknown>[] = [];
   for (const r of linhas.slice(h + 1)) {
     if (!r || vazio(r[pos.codTarefa])) continue;
@@ -175,7 +178,10 @@ function lerComponentes(linhas: Linhas) {
 function lerDados(linhas: Linhas) {
   const h = acharCabecalho(linhas, COLS_DADOS, "Dados");
   const pos = posicoes(linhas[h], COLS_DADOS);
-  const ops = new Map<string, Record<string, unknown> & { horasPrevistas: number; horasApontadas: number; atividades: number; ativApontadas: number; ativParciais: number }>();
+  const ops = new Map<
+    string,
+    Record<string, unknown> & { horasPrevistas: number; horasApontadas: number; atividades: number; ativApontadas: number; ativParciais: number }
+  >();
   for (const r of linhas.slice(h + 1)) {
     if (!r || vazio(r[pos.op])) continue;
     const op = String(r[pos.op]);
@@ -201,7 +207,9 @@ function lerDados(linhas: Linhas) {
     if (typeof hp === "number") o.horasPrevistas += hp;
     if (typeof ha === "number") o.horasApontadas += ha;
     o.atividades += 1;
-    const st = String(r[pos.status] ?? "").trim().toUpperCase();
+    const st = String(r[pos.status] ?? "")
+      .trim()
+      .toUpperCase();
     if (st === "APONTADA") o.ativApontadas += 1;
     else if (st === "PARCIALMENTE APONTADA") o.ativParciais += 1;
   }

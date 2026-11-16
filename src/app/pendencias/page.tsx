@@ -65,7 +65,9 @@ export default async function Pendencias({ searchParams }: Props) {
         <main className="in">
           <div className="card vazio">
             <b>Nenhuma planilha carregada ainda</b>
-            <Link className="btn sec" href="/importar">Ir para Atualizar</Link>
+            <Link className="btn sec" href="/importar">
+              Ir para Atualizar
+            </Link>
           </div>
         </main>
       </>
@@ -136,8 +138,7 @@ export default async function Pendencias({ searchParams }: Props) {
       })
     : [];
   const corte = new Map(linhasPlano.map((l) => [`${l.op}|${l.plano}`, statusCorte(l.qtdPrev, l.qtdApont)]));
-  const cortesDa = (op: string, cnc: string | null) =>
-    planosDaColuna(cnc).map((p) => ({ plano: p, st: corte.get(`${op}|${p}`) as StatusCorte | undefined }));
+  const cortesDa = (op: string, cnc: string | null) => planosDaColuna(cnc).map((p) => ({ plano: p, st: corte.get(`${op}|${p}`) as StatusCorte | undefined }));
 
   // Linhas da página agrupadas por código de tarefa e execução, na ordem atual
   const blocos: { tarPai: string; exec: string; linhas: typeof linhas }[] = [];
@@ -165,10 +166,13 @@ export default async function Pendencias({ searchParams }: Props) {
     c.codigoPrd,
     c.nome,
     c.grupo,
-    cortesDa(c.codOrdem, c.cnc).map((x) => `${x.plano} ${x.st ? ROTULO_CORTE[x.st] : "Fora da aba CNC_PCQ"}`).join(" / "),
+    cortesDa(c.codOrdem, c.cnc)
+      .map((x) => `${x.plano} ${x.st ? ROTULO_CORTE[x.st] : "Fora da aba CNC_PCQ"}`)
+      .join(" / "),
     c.qtdUsada,
     c.unidade,
     c.apontado,
+    c.situacaoRa ?? "",
   ]);
 
   const opcoesGrupo = grupos.map((g) => ({ valor: g.grupo, rotulo: `${g.grupo} (${num(g._count._all)})` }));
@@ -207,13 +211,28 @@ export default async function Pendencias({ searchParams }: Props) {
                     {a.rotulo}
                   </Link>
                 ))}
-                <Link className="btn sec" href="/pendencias">Limpar</Link>
+                <Link className="btn sec" href="/pendencias">
+                  Limpar
+                </Link>
               </>
             )}
             <div className="acoes">
               <Exportar
                 nome={`pendencias-pagina-${pagina}`}
-                cabecalho={["Tarefa", "Execução", "OP", "Estrutura", "Componente", "Nome", "Grupo", "Plano de corte", "Usado", "Unidade", "Apontado"]}
+                cabecalho={[
+                  "Tarefa",
+                  "Execução",
+                  "OP",
+                  "Estrutura",
+                  "Componente",
+                  "Nome",
+                  "Grupo",
+                  "Plano de corte",
+                  "Usado",
+                  "Unidade",
+                  "Apontado",
+                  "Situação da RA",
+                ]}
                 linhas={exportar}
               />
               <Imprimir />
@@ -230,7 +249,9 @@ export default async function Pendencias({ searchParams }: Props) {
             <div className="card vazio">
               <b>Nenhum componente com esses filtros</b>
               <span>Mude a busca ou remova um filtro.</span>
-              <Link className="btn sec" href="/pendencias">Limpar</Link>
+              <Link className="btn sec" href="/pendencias">
+                Limpar
+              </Link>
             </div>
           ) : (
             <div className="card tab-wrap">
@@ -245,7 +266,11 @@ export default async function Pendencias({ searchParams }: Props) {
                     <th>Componente</th>
                     <th>Plano de corte</th>
                     <th className="n" aria-sort={ordemUsado}>
-                      <Link className="ordena" href={link(params, { ordem: ordem === "usado-desc" ? "usado-asc" : "usado-desc", pagina: undefined })} scroll={false}>
+                      <Link
+                        className="ordena"
+                        href={link(params, { ordem: ordem === "usado-desc" ? "usado-asc" : "usado-desc", pagina: undefined })}
+                        scroll={false}
+                      >
                         Usado
                       </Link>
                     </th>
@@ -273,7 +298,11 @@ export default async function Pendencias({ searchParams }: Props) {
                       const celula = (x: (typeof cortes)[number]) => (
                         <span key={x.plano} className="plano-cel">
                           <span className="mono">{x.plano}</span>
-                          {x.st ? <span className={`tag ${CLASSE_CORTE[x.st]}`}>{ROTULO_CORTE[x.st]}</span> : <span className="tag neutro">Fora da aba CNC_PCQ</span>}
+                          {x.st ? (
+                            <span className={`tag ${CLASSE_CORTE[x.st]}`}>{ROTULO_CORTE[x.st]}</span>
+                          ) : (
+                            <span className="tag neutro">Fora da aba CNC_PCQ</span>
+                          )}
                         </span>
                       );
                       return (
@@ -287,6 +316,7 @@ export default async function Pendencias({ searchParams }: Props) {
                             <span className="pend-grupo">Grupo {c.grupo}</span>
                             <br />
                             {c.nome}
+                            {c.situacaoRa && <span className={`item-ra${c.situacaoRa === "RA Pendente" ? " item-ra-pend" : ""}`}>{c.situacaoRa}</span>}
                           </td>
                           <td>
                             {cortes.length === 0 ? (
@@ -328,9 +358,13 @@ export default async function Pendencias({ searchParams }: Props) {
               </span>
               <div className="pag-n">
                 {pagina > 1 ? (
-                  <Link className="btn sec" href={link(params, { pagina: String(pagina - 1) })}>‹ Anterior</Link>
+                  <Link className="btn sec" href={link(params, { pagina: String(pagina - 1) })}>
+                    ‹ Anterior
+                  </Link>
                 ) : (
-                  <span className="btn sec" aria-disabled="true">‹ Anterior</span>
+                  <span className="btn sec" aria-disabled="true">
+                    ‹ Anterior
+                  </span>
                 )}
                 {numerosPagina(pagina, paginas).map((n, i) =>
                   n === "…" ? (
@@ -342,9 +376,13 @@ export default async function Pendencias({ searchParams }: Props) {
                   ),
                 )}
                 {pagina < paginas ? (
-                  <Link className="btn sec" href={link(params, { pagina: String(pagina + 1) })}>Próxima ›</Link>
+                  <Link className="btn sec" href={link(params, { pagina: String(pagina + 1) })}>
+                    Próxima ›
+                  </Link>
                 ) : (
-                  <span className="btn sec" aria-disabled="true">Próxima ›</span>
+                  <span className="btn sec" aria-disabled="true">
+                    Próxima ›
+                  </span>
                 )}
               </div>
             </nav>

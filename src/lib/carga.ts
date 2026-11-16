@@ -38,6 +38,7 @@ export interface LinhaTarefa {
   qtdPrevisto: number;
   qtdRealizada: number;
   avanco: number;
+  avancoFabric: number; // 0 a 1: guias do código com 100% (coluna % AVANÇO FABRIC)
   prioridade: string | null;
   totalComp: number;
   pendMaterial: number;
@@ -62,6 +63,7 @@ export interface LinhaComponente {
   apontado2: number;
   lote: string | null;
   cnc: string | null; // plano(s) de corte (CNC... ou PA...), separados por vírgula
+  situacaoRa: string | null; // coluna SITUACAO_RA
 }
 
 export interface LinhaOrdem {
@@ -89,6 +91,10 @@ export interface CargaPreparada {
   projeto: string;
   centroCusto: string;
   totais: { execucoes: number; execPend: number; previsto: number; realizado: number };
+  /** A planilha tem a coluna % AVANÇO FABRIC (as antigas não têm). */
+  comFabric: boolean;
+  /** Saldo que já deveria ter subido pela fabricação: soma de % AVANÇO FABRIC × QTD PREVISTO. */
+  esperado: number;
   tarefas: LinhaTarefa[];
   componentes: LinhaComponente[];
   ordens: LinhaOrdem[];
@@ -131,6 +137,7 @@ export function prepararCarga(json: PlanilhaJson, projeto?: string): CargaPrepar
       apontado2: numero(c.apontado2),
       lote: lote === "" ? null : lote,
       cnc: normalizarPlano(c.cnc),
+      situacaoRa: texto(c.situacaoRa) || null,
     };
   });
 
@@ -191,6 +198,7 @@ export function prepararCarga(json: PlanilhaJson, projeto?: string): CargaPrepar
       qtdPrevisto,
       qtdRealizada,
       avanco: numero(t.avanco),
+      avancoFabric: Math.max(0, Math.min(1, numero(t.avancoFabric))),
       prioridade: prioridade === "" ? null : prioridade,
       totalComp: comps.length,
       pendMaterial: comps.filter((c) => statusMaterial(c.apontado) === "pendente").length,
@@ -221,13 +229,18 @@ export function prepararCarga(json: PlanilhaJson, projeto?: string): CargaPrepar
   };
   const somaPrev = tarefas.reduce((s, t) => s + t.qtdPrevisto, 0);
   const somaReal = tarefas.reduce((s, t) => s + t.qtdRealizada, 0);
-  if (Math.abs(somaPrev - totais.previsto) > TOLERANCIA) divergencias.push({ codTarefa: "TOTAL", campo: "QTD PREVISTO", planilha: totais.previsto, calculado: somaPrev });
-  if (Math.abs(somaReal - totais.realizado) > TOLERANCIA) divergencias.push({ codTarefa: "TOTAL", campo: "QTD REALIZADA", planilha: totais.realizado, calculado: somaReal });
+  if (Math.abs(somaPrev - totais.previsto) > TOLERANCIA)
+    divergencias.push({ codTarefa: "TOTAL", campo: "QTD PREVISTO", planilha: totais.previsto, calculado: somaPrev });
+  if (Math.abs(somaReal - totais.realizado) > TOLERANCIA)
+    divergencias.push({ codTarefa: "TOTAL", campo: "QTD REALIZADA", planilha: totais.realizado, calculado: somaReal });
 
+  const comFabric = json.tarefas.some((t) => "avancoFabric" in t);
   return {
     projeto: projeto?.trim() || projetoDoArquivo(json.arquivo),
     centroCusto: texto(json.centroCusto),
     totais,
+    comFabric,
+    esperado: comFabric ? tarefas.reduce((s, t) => s + t.avancoFabric * t.qtdPrevisto, 0) : 0,
     tarefas,
     componentes,
     ordens,
