@@ -265,6 +265,12 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
                 </span>
               )}
             </p>
+          </div>
+        </Painel>
+
+        <Painel titulo="Saldo do mês" apoio="Saldo subido × pendente do projeto, na última atualização de cada mês.">
+          <div className="flex flex-col gap-3">
+            <SaldoPorMes meses={meses} desde={dataCurta(historico[0]?.dataRef ?? atual.dataRef).slice(0, 5)} />
             <div className="flex flex-col gap-2 border-t border-subtle pt-3">
               <p className="text-sm text-txt">
                 <b>Códigos de tarefa</b>
@@ -279,10 +285,6 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
               <FaixaSituacao semAvanco={atual.semAvanco} andamento={atual.andamento} concluidas={atual.concluidas} />
             </div>
           </div>
-        </Painel>
-
-        <Painel titulo="Saldo do mês" apoio="Saldo subido × pendente do projeto, na última atualização de cada mês.">
-          <SaldoPorMes meses={meses} desde={dataCurta(historico[0]?.dataRef ?? atual.dataRef).slice(0, 5)} />
         </Painel>
       </section>
 
@@ -380,18 +382,40 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         >
           <ol className="flex flex-col">
             {tags.top.map((t) => {
-              const s = t.previsto > 0 ? t.realizado / t.previsto : 0;
-              const f = carga.comFabric && t.previsto > 0 ? t.esperado / t.previsto : null;
+              const sTag = t.previsto > 0 ? t.realizado / t.previsto : 0;
+              const fTag = carga.comFabric && t.previsto > 0 ? t.esperado / t.previsto : null;
               return (
-                <li key={t.tag} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 border-t border-subtle py-2.5 first:border-t-0">
-                  <b className="min-w-0 break-words font-mono text-sm font-bold text-txt">{t.tag}</b>
-                  {f !== null && (
-                    <span className="text-xs text-txt-2">
-                      faltam <b className="font-mono text-txt">{num(faltaParaFabricacao(t), 1)}</b>
+                <li
+                  key={t.tag}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t border-subtle py-2 first:border-t-0 md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_5.5rem]"
+                >
+                  <span className="min-w-0 leading-tight">
+                    <b className="break-words font-mono text-[13px] font-bold text-txt">{t.tag}</b>
+                    <span className="block font-mono text-[11px] text-txt-2">{num(t.ops)} OPs</span>
+                  </span>
+                  <span className="text-right text-xs leading-tight text-txt-2 md:order-last">
+                    {fTag !== null ? (
+                      <>
+                        faltam
+                        <b className="block font-mono text-[13px] text-txt">{num(faltaParaFabricacao(t), 1)}</b>
+                      </>
+                    ) : (
+                      <b className="font-mono text-[13px] text-txt">
+                        {num(t.realizado, 1)} de {num(t.previsto, 1)}
+                      </b>
+                    )}
+                  </span>
+                  <span className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
+                    <BarrasSaldo saldo={sTag} fabric={fTag} />
+                    <span className="font-mono text-[11px] text-txt-2">
+                      Saldo <b className="text-txt">{pct(sTag)}</b>
+                      {fTag !== null && (
+                        <>
+                          {" "}
+                          · Fabric. <b className="text-txt">{pct(fTag)}</b>
+                        </>
+                      )}
                     </span>
-                  )}
-                  <span className="col-span-2">
-                    <Avanco valor={s} fabric={f} rotulo={`${num(t.realizado, 1)} de ${num(t.previsto, 1)} · ${num(t.ops)} OPs`} />
                   </span>
                 </li>
               );
