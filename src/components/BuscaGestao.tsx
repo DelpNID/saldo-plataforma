@@ -12,7 +12,7 @@ const MAX_LISTA = 30;
 /** Rótulo micro-caps (régua do Visto), em txt-2: o muted fica abaixo do AA sobre o bg-2 dos quadros. */
 const ROTULO = "text-[11px] font-bold uppercase tracking-[0.1em] text-txt-2";
 
-/** "Como está o avanço de…": filtra por desenho, código de tarefa ou descrição do equipamento e soma o recorte. */
+/** "Como está o avanço de…": filtra por desenho, código de tarefa, descrição do equipamento ou TAG e soma o recorte. */
 export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codigos: CodigoBusca[]; inicial?: string; comFabric?: boolean }) {
   const [q, setQ] = useState(inicial);
   const achados = useMemo(() => buscarCodigos(codigos, q), [codigos, q]);
@@ -30,11 +30,11 @@ export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codi
         type="search"
         inputMode="search"
         autoComplete="off"
-        placeholder="Desenho, código de tarefa ou equipamento"
+        placeholder="Desenho, código, equipamento ou TAG"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
-      {!ativo && <p className="text-sm text-txt-2">Ex.: 090012-35-DA-0229, 1.18 ou PIN PILE.</p>}
+      {!ativo && <p className="text-sm text-txt-2">Ex.: 090012-35-DA-0229, 1.18, PIN PILE ou a TAG BUCKET.</p>}
 
       {ativo && achados.length === 0 && (
         <p className="rounded-btn bg-bg-2 px-3.5 py-3 text-sm text-txt" role="status">
@@ -94,9 +94,7 @@ export function BuscaGestao({ codigos, inicial = "", comFabric = false }: { codi
               </li>
             ))}
           </ol>
-          {achados.length > MAX_LISTA && (
-            <p className="text-sm text-txt-2">E mais {num(achados.length - MAX_LISTA)} códigos. Refine a busca para ver todos.</p>
-          )}
+          {achados.length > MAX_LISTA && <p className="text-sm text-txt-2">E mais {num(achados.length - MAX_LISTA)} códigos. Refine a busca para ver todos.</p>}
         </div>
       )}
     </section>

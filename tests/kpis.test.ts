@@ -116,6 +116,8 @@ describe("busca da Gestão", () => {
     expect(buscarCodigos(lista, "pin pile axis").map((t) => t.cod)).toEqual(["1.52"]);
     expect(buscarCodigos(lista, "fixacao").map((t) => t.cod)).toEqual(["2.10"]);
     expect(buscarCodigos(lista, "   ")).toEqual([]);
+    // TAG das OPs do código (aba Dados)
+    expect(buscarCodigos([{ ...lista[0], tags: "PIN BKT LOCKBAR · BUCKET" }, lista[1]], "lockbar").map((t) => t.cod)).toEqual(["1.46"]);
   });
 
   it("soma o recorte com realizado ÷ previsto", () => {

@@ -144,6 +144,7 @@ export interface CodigoBusca {
   cod: string;
   descricao: string;
   desenho: string;
+  tags?: string; // TAGs das OPs do código (aba Dados), para achar pelo equipamento
   previsto: number;
   realizado: number;
   avanco: number;
@@ -157,11 +158,11 @@ export interface CodigoBusca {
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Todas as palavras digitadas precisam aparecer no código, na descrição ou no desenho (sem diferenciar acento e maiúscula). */
-export function buscarCodigos<T extends { cod: string; descricao: string; desenho: string }>(lista: T[], q: string): T[] {
+export function buscarCodigos<T extends { cod: string; descricao: string; desenho: string; tags?: string }>(lista: T[], q: string): T[] {
   const termos = semAcento(q).split(/\s+/).filter(Boolean);
   if (termos.length === 0) return [];
   return lista.filter((t) => {
-    const alvo = semAcento(`${t.cod} ${t.descricao} ${t.desenho}`);
+    const alvo = semAcento(`${t.cod} ${t.descricao} ${t.desenho} ${t.tags ?? ""}`);
     return termos.every((x) => alvo.includes(x));
   });
 }

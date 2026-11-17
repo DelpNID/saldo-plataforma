@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Pendências de baixa" };
 const POR_PAGINA = 100;
 
 interface Props {
-  searchParams: { tarefa?: string; grupo?: string; q?: string; pagina?: string; plano?: string; ordem?: string };
+  searchParams: { tarefa?: string; grupo?: string; q?: string; pagina?: string; plano?: string; ordem?: string; ra?: string };
 }
 
 // A coluna guarda um ou mais planos separados por vírgula ("CNC0007581,PA10.081")
@@ -39,6 +39,14 @@ const ORDENS: Record<string, Prisma.ComponenteOrderByWithRelationInput[]> = {
   "op-desc": [{ codOrdem: "desc" }, { idAtvOrdem: "asc" }],
   "usado-desc": [{ qtdUsada: "desc" }, { codOrdem: "asc" }],
   "usado-asc": [{ qtdUsada: "asc" }, { codOrdem: "asc" }],
+};
+
+// Situação da RA (coluna SITUACAO_RA): a Gestão abre a lista já filtrada por uma delas
+const FILTRO_RA: Record<string, string> = {
+  pendente: "RA Pendente",
+  gerada: "RA gerada",
+  subconjunto: "Subconjunto (sem RA)",
+  plano: "Plano sem RA",
 };
 
 type Params = Props["searchParams"];
@@ -86,7 +94,8 @@ export default async function Pendencias({ searchParams }: Props) {
   const pagina = Math.max(1, Math.trunc(Number(searchParams.pagina)) || 1);
   const plano = searchParams.plano && FILTRO_PLANO[searchParams.plano] ? searchParams.plano : undefined;
   const ordem = searchParams.ordem && ORDENS[searchParams.ordem] ? searchParams.ordem : undefined;
-  const params: Params = { tarefa, grupo, q, plano, ordem };
+  const ra = searchParams.ra && FILTRO_RA[searchParams.ra] ? searchParams.ra : undefined;
+  const params: Params = { tarefa, grupo, q, plano, ordem, ra };
 
   const base: Prisma.ComponenteWhereInput = { cargaId: carga.id, apontado: { lte: 0 } };
   const where: Prisma.ComponenteWhereInput = {
@@ -95,6 +104,7 @@ export default async function Pendencias({ searchParams }: Props) {
     ...(grupo ? { grupo } : {}),
     AND: [
       ...(plano ? [FILTRO_PLANO[plano].where] : []),
+      ...(ra ? [{ situacaoRa: FILTRO_RA[ra] }] : []),
       ...(q
         ? [
             {
@@ -157,6 +167,7 @@ export default async function Pendencias({ searchParams }: Props) {
     ...(tarefa ? [{ rotulo: `Código ${tarefa}`, sem: { tarefa: undefined } }] : []),
     ...(grupo ? [{ rotulo: `Grupo ${grupo}`, sem: { grupo: undefined } }] : []),
     ...(plano ? [{ rotulo: FILTRO_PLANO[plano].rotulo, sem: { plano: undefined } }] : []),
+    ...(ra ? [{ rotulo: FILTRO_RA[ra], sem: { ra: undefined } }] : []),
   ];
 
   const ordemOp = ordem?.startsWith("op-") ? (ordem === "op-asc" ? "ascending" : "descending") : undefined;
@@ -181,7 +192,7 @@ export default async function Pendencias({ searchParams }: Props) {
 
   const opcoesGrupo = grupos.map((g) => ({ valor: g.grupo, rotulo: `${g.grupo} (${num(g._count._all)})` }));
   if (grupo && !opcoesGrupo.some((o) => o.valor === grupo)) opcoesGrupo.unshift({ valor: grupo, rotulo: `${grupo} (0)` });
-  const valores: ValoresFiltro = { q, tarefa, grupo, plano, ordem };
+  const valores: ValoresFiltro = { q, tarefa, grupo, plano, ordem, ra };
 
   /** Cabeçalho de tabela na régua do Visto: cinza, nunca vermelho. */
   const CAB = "px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-txt-muted";
@@ -204,6 +215,7 @@ export default async function Pendencias({ searchParams }: Props) {
           tarefas={tarefas.map((t) => ({ valor: t.tarPai, rotulo: `${t.tarPai} (${num(t._count._all)})` }))}
           grupos={opcoesGrupo}
           planos={Object.entries(FILTRO_PLANO).map(([k, f]) => ({ valor: k, rotulo: f.rotulo }))}
+          ras={Object.entries(FILTRO_RA).map(([k, rotulo]) => ({ valor: k, rotulo }))}
         />
         <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-txt">
           {ativos.length > 0 && (
@@ -255,9 +267,7 @@ export default async function Pendencias({ searchParams }: Props) {
           <h2 id="t-lista" className="text-[15px] font-semibold leading-tight text-txt">
             Componentes sem apontamento
           </h2>
-          <p className="mt-1 max-w-[70ch] text-xs leading-snug text-txt-2">
-            Agrupados por código de tarefa e execução. Toque na OP ou no código para copiar.
-          </p>
+          <p className="mt-1 max-w-[70ch] text-xs leading-snug text-txt-2">Agrupados por código de tarefa e execução. Toque na OP ou no código para copiar.</p>
         </div>
         {linhas.length === 0 ? (
           <div className="rounded-card border border-subtle bg-bg shadow-subtle">
