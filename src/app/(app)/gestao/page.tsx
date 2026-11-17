@@ -51,7 +51,7 @@ function Destaque({ rotulo, valor, detalhe, alerta }: { rotulo: string; valor: s
   return (
     <div className="flex min-w-0 flex-col gap-0.5 rounded-btn border border-subtle bg-bg-2 px-2.5 py-2 sm:px-3 sm:py-2.5">
       <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-txt-2 sm:text-[11px] sm:tracking-[0.1em]">{rotulo}</span>
-      <b className={`font-mono text-[20px] font-bold leading-tight sm:text-[26px] ${alerta ? "text-delp-red" : "text-txt"}`}>{valor}</b>
+      <b className={`whitespace-nowrap font-mono text-[17px] font-bold leading-tight sm:text-[26px] ${alerta ? "text-delp-red" : "text-txt"}`}>{valor}</b>
       <span className="text-[11px] leading-snug text-txt-2 sm:text-xs">{detalhe}</span>
     </div>
   );
