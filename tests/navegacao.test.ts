@@ -38,6 +38,11 @@ describe("trilha do topo", () => {
     expect(trilhaDaRota("/tarefa/1%2F2").at(-1)).toEqual({ rotulo: "Tarefa 1/2" });
   });
 
+  it("põe a lista de OPs fabricadas sem saldo debaixo da Gestão, com a Gestão acesa no menu", () => {
+    expect(trilhaDaRota("/gestao/ops-sem-saldo")).toEqual([{ rotulo: "Gestão", para: "/gestao" }, { rotulo: "OPs fabricadas sem saldo" }]);
+    expect(estaAtivo(item("/gestao"), "/gestao/ops-sem-saldo")).toBe(true);
+  });
+
   it("não inventa trilha para caminho desconhecido", () => {
     expect(trilhaDaRota("/qualquer")).toEqual([]);
   });

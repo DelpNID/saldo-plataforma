@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { etapasDeOps, faltaParaFabricacao, nomeMes, pendenciasPorRa, rankingTags, seriePorMes, type SaldoTag } from "@/lib/gestor";
+import {
+  SEM_TAG,
+  etapasDeOps,
+  faltaParaFabricacao,
+  filtrarOps,
+  lerFiltroOps,
+  linhaExportOp,
+  nomeMes,
+  ordenarOps,
+  pendenciasPorRa,
+  rankingTags,
+  seriePorMes,
+  type OpSemSaldo,
+  type SaldoTag,
+} from "@/lib/gestor";
+import { BOM, montarCsv } from "@/lib/csv";
+import { compararCodigo } from "@/lib/regras";
 
 const tag = (t: string, previsto: number, realizado: number, esperado: number): SaldoTag => ({ tag: t, previsto, realizado, esperado, pendentes: 0, ops: 1 });
 
@@ -52,5 +68,51 @@ describe("painel do gestor", () => {
   it("nome do mês", () => {
     expect(nomeMes("2026-01")).toEqual({ curto: "jan/26", longo: "janeiro de 2026" });
     expect(nomeMes("2026-11").curto).toBe("nov/26");
+  });
+});
+
+describe("lista das OPs fabricadas sem saldo", () => {
+  const op = (cod: string, n: string, tag: string, descricao: string): OpSemSaldo => ({
+    cod,
+    op: n,
+    tag,
+    descricao,
+    desenho: "090012-35-DA-0229",
+    planejada: 1,
+    efetivada: 0,
+    atividades: 3,
+    horasPrevistas: 5.5,
+    horasApontadas: 4.4,
+    componentes: 2,
+    pendentes: 2,
+  });
+  const lista = [
+    op("1.18", "140732/25", "B. PADEYE BP-2", "CH - 01"),
+    op("1.10", "99/26", "", "POS. 01 - USINADA"),
+    op("1.10", "140592/25", "BUCKET", "CONJUNTO 01"),
+    op("1.9", "5/25", "BUCKET", "CALANDRADA"),
+  ];
+
+  it("filtra por código, TAG (inclusive sem TAG) e busca sem acento", () => {
+    expect(filtrarOps(lista, { codigo: "1.10" }).map((o) => o.op)).toEqual(["99/26", "140592/25"]);
+    expect(filtrarOps(lista, { tag: "BUCKET" })).toHaveLength(2);
+    expect(filtrarOps(lista, { tag: SEM_TAG }).map((o) => o.op)).toEqual(["99/26"]);
+    expect(filtrarOps(lista, { q: "usinada 99" }).map((o) => o.op)).toEqual(["99/26"]);
+    expect(filtrarOps(lista, { q: "padeye" })).toHaveLength(1);
+  });
+
+  it("ordena pelo código na ordem natural e, dentro dele, pela OP (ano e número)", () => {
+    expect(ordenarOps(lista, compararCodigo).map((o) => `${o.cod} ${o.op}`)).toEqual(["1.9 5/25", "1.10 140592/25", "1.10 99/26", "1.18 140732/25"]);
+  });
+
+  it("lê os filtros do endereço com limite de tamanho", () => {
+    expect(lerFiltroOps({ q: "  bucket ", codigo: "", tag: undefined })).toEqual({ q: "bucket", codigo: undefined, tag: undefined });
+    expect(lerFiltroOps({ q: "x".repeat(200) }).q).toHaveLength(80);
+  });
+
+  it("exporta em CSV para o Excel (separador ;, vírgula decimal e BOM)", () => {
+    const csv = montarCsv(["OP", "Horas"], [linhaExportOp(lista[0]).slice(1, 2).concat([4.4]), ["a;b", null]]);
+    expect(csv).toBe(["OP;Horas", "140732/25;4,4", '"a;b";'].join("\r\n"));
+    expect(BOM.codePointAt(0)).toBe(0xfeff);
   });
 });

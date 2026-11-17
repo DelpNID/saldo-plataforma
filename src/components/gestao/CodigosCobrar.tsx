@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { Avanco } from "@/components/Etiquetas";
 import { Segmentado } from "@/components/ui/Segmentado";
 import { num } from "@/lib/formato";
+import { CAMINHO_OPS } from "@/lib/gestor";
 
 export interface LinhaCobrar {
   cod: string;
@@ -98,6 +99,14 @@ export function CodigosCobrar({ linhas, comFabric }: { linhas: LinhaCobrar[]; co
       )}
       <p className="text-xs text-txt-2">
         Os {QUANTOS} primeiros em “{atual.rotulo.toLowerCase()}”. Toque num código para ver as execuções, as estruturas e os componentes.
+        {atual.id === "ops" && (
+          <>
+            {" "}
+            <Link href={CAMINHO_OPS} className="font-semibold text-txt underline underline-offset-2 hover:text-delp-red">
+              Ver todas as OPs fabricadas sem saldo
+            </Link>
+          </>
+        )}
       </p>
     </div>
   );

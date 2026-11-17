@@ -190,3 +190,135 @@ export async function dadosGestor(prisma: PrismaClient, cargaId: number) {
     porCodigo,
   };
 }
+
+// ---------- Lista das OPs fabricadas sem saldo (cobrança) ----------
+
+/** Endereço da lista (filha da Gestão: o menu acende Gestão e a trilha mostra os dois). */
+export const CAMINHO_OPS = "/gestao/ops-sem-saldo";
+
+/** Uma OP fabricada sem saldo dentro de um código de tarefa (a OP que entra em dois códigos aparece nos dois). */
+export interface OpSemSaldo {
+  cod: string;
+  op: string;
+  tag: string;
+  descricao: string; // DESCRIÇÃOOP da aba Dados
+  desenho: string;
+  planejada: number; // QTDE PLANEJADA
+  efetivada: number; // QTDE EFETIVADA
+  atividades: number;
+  horasPrevistas: number;
+  horasApontadas: number;
+  componentes: number; // componentes do código nesta OP
+  pendentes: number; // … com APONTADO = 0
+}
+
+export interface FiltroOps {
+  q?: string;
+  codigo?: string;
+  tag?: string;
+}
+
+const semAcentoOp = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** Filtra pela busca (OP, descrição, TAG, desenho: todas as palavras), pelo código e pela TAG. */
+export function filtrarOps(lista: OpSemSaldo[], f: FiltroOps): OpSemSaldo[] {
+  const termos = semAcentoOp(f.q ?? "")
+    .split(/\s+/)
+    .filter(Boolean);
+  return lista.filter((o) => {
+    if (f.codigo && o.cod !== f.codigo) return false;
+    if (f.tag !== undefined && f.tag !== null && f.tag !== "" && o.tag !== (f.tag === SEM_TAG ? "" : f.tag)) return false;
+    if (termos.length === 0) return true;
+    const alvo = semAcentoOp(`${o.op} ${o.descricao} ${o.tag} ${o.desenho}`);
+    return termos.every((t) => alvo.includes(t));
+  });
+}
+
+/** Valor do filtro de TAG para as OPs sem TAG. */
+export const SEM_TAG = "(sem TAG)";
+
+const OP_NUM = (op: string) => {
+  const [n, ano] = op.split("/");
+  return { ano: Number(ano) || 0, n: Number(n) || 0 };
+};
+
+/** Ordem da lista: código de tarefa (na ordem natural de `comparar`), depois a OP (ano e número). */
+export function ordenarOps(lista: OpSemSaldo[], comparar: (a: string, b: string) => number): OpSemSaldo[] {
+  return [...lista].sort((a, b) => {
+    const c = comparar(a.cod, b.cod);
+    if (c) return c;
+    const x = OP_NUM(a.op);
+    const y = OP_NUM(b.op);
+    return x.ano - y.ano || x.n - y.n || a.op.localeCompare(b.op);
+  });
+}
+
+export async function opsFabricadasSemSaldo(prisma: PrismaClient, cargaId: number): Promise<OpSemSaldo[]> {
+  const linhas = await prisma.$queryRawUnsafe<OpSemSaldo[]>(
+    `WITH op AS (
+       SELECT c."tarPai" AS cod, c."codOrdem" AS op,
+              min(c.previsto) AS previsto, min(c.apontado2) AS apontado2,
+              count(*)::int AS componentes,
+              (count(*) FILTER (WHERE c.apontado <= 0))::int AS pendentes
+       FROM "Componente" c WHERE c."cargaId" = $1
+       GROUP BY 1, 2
+     )
+     SELECT op.cod, op.op, coalesce(nullif(trim(o.tag), ''), '') AS tag, o.descricao, o.desenho,
+            op.previsto::float8 AS planejada, op.apontado2::float8 AS efetivada,
+            o.atividades, o."horasPrevistas"::float8 AS "horasPrevistas", o."horasApontadas"::float8 AS "horasApontadas",
+            op.componentes, op.pendentes
+     FROM op JOIN "Ordem" o ON o."cargaId" = $1 AND o.op = op.op
+     WHERE NOT ${COM_SALDO} AND o.atividades > 0 AND o."ativApontadas" = o.atividades`,
+    cargaId,
+  );
+  return linhas.map((l) => ({
+    ...l,
+    planejada: Number(l.planejada),
+    efetivada: Number(l.efetivada),
+    atividades: Number(l.atividades),
+    horasPrevistas: Number(l.horasPrevistas),
+    horasApontadas: Number(l.horasApontadas),
+    componentes: Number(l.componentes),
+    pendentes: Number(l.pendentes),
+  }));
+}
+
+/** Lê os filtros da lista do endereço (com limite de tamanho, como em Pendências). */
+export function lerFiltroOps(sp: { q?: string; codigo?: string; tag?: string }): FiltroOps {
+  return {
+    q: sp.q?.trim().slice(0, 80) || undefined,
+    codigo: sp.codigo?.slice(0, 40) || undefined,
+    tag: sp.tag?.slice(0, 60) || undefined,
+  };
+}
+
+/** Colunas do arquivo exportado (a lista inteira, já filtrada). */
+export const CABECALHO_OPS = [
+  "Código de tarefa",
+  "OP",
+  "TAG",
+  "Descrição da OP",
+  "Desenho",
+  "QTDE planejada",
+  "QTDE efetivada",
+  "Atividades (todas apontadas)",
+  "Horas previstas",
+  "Horas apontadas",
+  "Componentes do código na OP",
+  "Pendentes de baixa",
+];
+
+export const linhaExportOp = (o: OpSemSaldo): (string | number)[] => [
+  o.cod,
+  o.op,
+  o.tag,
+  o.descricao,
+  o.desenho,
+  o.planejada,
+  o.efetivada,
+  o.atividades,
+  o.horasPrevistas,
+  o.horasApontadas,
+  o.componentes,
+  o.pendentes,
+];

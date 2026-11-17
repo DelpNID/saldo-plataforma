@@ -15,7 +15,7 @@ import { TileIndicador } from "@/components/ui/TileIndicador";
 import { COR_ASCENT, ESCALA_VERMELHOS, SELO_TOM } from "@/lib/cores";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { dataCurta, num, pct, quando } from "@/lib/formato";
-import { dadosGestor, faltaParaFabricacao, nomeMes, rankingTags, seriePorMes } from "@/lib/gestor";
+import { CAMINHO_OPS, dadosGestor, faltaParaFabricacao, nomeMes, rankingTags, seriePorMes } from "@/lib/gestor";
 import { avancoDe, fabricDe, garantirHistorico, ritmoSaldo, serieDiaria } from "@/lib/kpis";
 import { compararCodigo, descricaoCurta, grupoTarefa } from "@/lib/regras";
 
@@ -317,11 +317,15 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         <Painel
           titulo="Em que etapa estão as OPs"
           apoio="Cada OP dos componentes numa etapa só. Saldo efetivado = QTDE EFETIVADA ≥ PLANEJADA; as atividades vêm da aba Dados."
+          acao={etapas.fabricadasSemSaldo > 0 ? { rotulo: "Lista para cobrar", href: CAMINHO_OPS } : undefined}
         >
           <div className="flex flex-col gap-3">
             {etapas.fabricadasSemSaldo > 0 && (
               <p className="rounded-btn border-l-4 border-delp-red bg-bg-2 px-3.5 py-2.5 text-sm text-txt">
-                <b className="font-mono">{num(etapas.fabricadasSemSaldo)}</b> OPs já têm todas as atividades apontadas e o saldo ainda não foi efetivado.
+                <b className="font-mono">{num(etapas.fabricadasSemSaldo)}</b> OPs já têm todas as atividades apontadas e o saldo ainda não foi efetivado.{" "}
+                <Link href={CAMINHO_OPS} className="font-semibold text-txt underline underline-offset-2 hover:text-delp-red">
+                  Ver a lista
+                </Link>
               </p>
             )}
             <FaixaPartes

@@ -3,6 +3,7 @@
 import { Download, Printer } from "lucide-react";
 import { useEffect, useState, type MouseEvent } from "react";
 import { buttonVariants } from "./ui/Button";
+import { BOM, montarCsv, type Celula } from "@/lib/csv";
 
 /** Botão de ferramenta de uma lista (exportar, imprimir, expandir): o ghost do Visto, compacto. */
 export const BOTAO_FERRAMENTA = `${buttonVariants.ghost} !px-3.5 !text-[13px] print:hidden`;
@@ -43,7 +44,13 @@ export function Copiar({ valor, tipo }: { valor: string; tipo: "OP" | "Código" 
     let ok = copiarNaHora(valor, e.currentTarget);
     if (!ok && navigator.clipboard) {
       const espera = new Promise<boolean>((r) => setTimeout(() => r(false), 800));
-      ok = await Promise.race([navigator.clipboard.writeText(valor).then(() => true, () => false), espera]);
+      ok = await Promise.race([
+        navigator.clipboard.writeText(valor).then(
+          () => true,
+          () => false,
+        ),
+        espera,
+      ]);
     }
     setAviso(ok ? "ok" : "falhou");
   }
@@ -59,10 +66,7 @@ export function Copiar({ valor, tipo }: { valor: string; tipo: "OP" | "Código" 
         {valor}
       </button>
       {aviso && (
-        <span
-          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-btn bg-txt px-4 py-3 text-sm font-semibold text-bg shadow-strong"
-          role="status"
-        >
+        <span className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-btn bg-txt px-4 py-3 text-sm font-semibold text-bg shadow-strong" role="status">
           {aviso === "ok" ? `${tipo} ${valor} copiado` : `Não consegui copiar. Selecione e copie: ${valor}`}
         </span>
       )}
@@ -70,19 +74,12 @@ export function Copiar({ valor, tipo }: { valor: string; tipo: "OP" | "Código" 
   );
 }
 
-export type Celula = string | number | null | undefined;
-
-function celulaCsv(v: Celula): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v === "number" ? v.toLocaleString("pt-BR", { useGrouping: false, maximumFractionDigits: 3 }) : v;
-  return /[";\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
-}
+export type { Celula } from "@/lib/csv";
 
 /** Exporta a lista visível (já filtrada) em CSV para abrir no Excel. */
 export function Exportar({ nome, cabecalho, linhas }: { nome: string; cabecalho: string[]; linhas: Celula[][] }) {
   function baixar() {
-    const csv = [cabecalho, ...linhas].map((r) => r.map(celulaCsv).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(new Blob([BOM + montarCsv(cabecalho, linhas)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
     a.download = `${nome}.csv`;

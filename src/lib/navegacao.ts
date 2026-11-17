@@ -43,6 +43,9 @@ export function trilhaDaRota(pathname: string): { rotulo: string; para?: string 
     }
     return [{ rotulo: "Painel", para: "/" }, { rotulo: `Tarefa ${cod}` }];
   }
+  // Telas filhas da Gestão (fora do menu): a trilha volta para a Gestão
+  const FILHAS_GESTAO: Record<string, string> = { "/gestao/ops-sem-saldo": "OPs fabricadas sem saldo" };
+  if (FILHAS_GESTAO[pathname]) return [{ rotulo: "Gestão", para: "/gestao" }, { rotulo: FILHAS_GESTAO[pathname] }];
   const item = GRUPOS_MENU.flatMap((g) => g.itens).find((i) => i.para === pathname);
   return item ? [{ rotulo: item.rotulo }] : [];
 }
