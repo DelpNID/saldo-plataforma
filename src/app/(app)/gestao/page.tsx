@@ -1,19 +1,22 @@
 import { Upload } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import { BuscaGestao } from "@/components/BuscaGestao";
 import { GraficoEvolucao, type PontoGrafico } from "@/components/GraficoEvolucao";
-import { Barra, BarrasSaldo, EtiquetaSituacao, LinhaFabric, TextoRitmo, faltaFabric } from "@/components/Etiquetas";
+import { Avanco, BarrasSaldo, FaixaSituacao, LinhaFabric, faltaFabric } from "@/components/Etiquetas";
+import { CodigosCobrar, type LinhaCobrar } from "@/components/gestao/CodigosCobrar";
+import { BarrasLista, FaixaPartes } from "@/components/gestao/Graficos";
+import { SaldoPorMes, type MesGrafico } from "@/components/gestao/SaldoPorMes";
 import { EstadoVazio } from "@/components/layout/EstadoVazio";
 import { Painel } from "@/components/layout/Painel";
-import { Badge } from "@/components/ui/Badge";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { buttonVariants } from "@/components/ui/Button";
 import { TileIndicador } from "@/components/ui/TileIndicador";
-import { COR_ASCENT, SELO_TOM, TOM_DA_CLASSE } from "@/lib/cores";
+import { COR_ASCENT, ESCALA_VERMELHOS, SELO_TOM } from "@/lib/cores";
 import { cargaAtiva, prisma } from "@/lib/db";
 import { dataCurta, num, pct, quando } from "@/lib/formato";
-import { atrasoQtd, avancoDe, fabricDe, garantirHistorico, serieDiaria } from "@/lib/kpis";
+import { dadosGestor, faltaParaFabricacao, nomeMes, rankingTags, seriePorMes } from "@/lib/gestor";
+import { avancoDe, fabricDe, garantirHistorico, ritmoSaldo, serieDiaria } from "@/lib/kpis";
 import { compararCodigo, descricaoCurta, grupoTarefa } from "@/lib/regras";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +36,8 @@ function variacao(valor: number | null, unidade: "pp" | "n", melhorSeSobe: boole
   return { texto: `${sobe ? "+" : "−"}${texto} desde ${desde}`, sentido: sobe ? 1 : -1, subirEhBom: melhorSeSobe };
 }
 
-/** A mesma variação dentro de uma frase ("Em 7 dias: ▲ +2,1 p.p. desde 09/11"). */
 function VariacaoNaLinha({ v }: { v: Variacao }) {
-  const cor = v.sentido === 0 || v.subirEhBom === undefined ? "text-txt-2" : (v.sentido > 0) === v.subirEhBom ? SELO_TOM.success : SELO_TOM.danger;
+  const cor = v.sentido === 0 || v.subirEhBom === undefined ? "text-txt-2" : v.sentido > 0 === v.subirEhBom ? SELO_TOM.success : SELO_TOM.danger;
   return (
     <span className={`font-semibold ${cor}`}>
       {v.sentido > 0 ? "▲ " : v.sentido < 0 ? "▼ " : "= "}
@@ -44,24 +46,24 @@ function VariacaoNaLinha({ v }: { v: Variacao }) {
   );
 }
 
-/** Uma linha das listas "maior atraso / maior saldo / mais pendentes": leva ao código de tarefa. */
-function ItemTop({ cod, descricao, meta, selo, percentual }: { cod: string; descricao: string; meta: ReactNode; selo: ReactNode; percentual: string }) {
+/** Um número grande do bloco de leitura rápida. */
+function Destaque({ rotulo, valor, detalhe, alerta }: { rotulo: string; valor: string; detalhe: string; alerta?: boolean }) {
   return (
-    <li className="border-t border-subtle first:border-t-0">
-      <Link
-        href={`/tarefa/${encodeURIComponent(cod)}`}
-        className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 py-2.5 text-txt transition-colors hover:bg-bg-2"
-      >
-        <span className="col-span-2 break-words text-[15px] leading-snug">
-          <b className="font-mono font-bold">{cod}</b> {descricao}
-        </span>
-        <span className="text-sm text-txt">{meta}</span>
-        <span className="justify-self-end">{selo}</span>
-        <span className="col-span-2 font-mono text-[13px] text-txt-2">{percentual}</span>
-      </Link>
-    </li>
+    <div className="flex min-w-0 flex-col gap-0.5 rounded-btn border border-subtle bg-bg-2 px-2.5 py-2 sm:px-3 sm:py-2.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-txt-2 sm:text-[11px] sm:tracking-[0.1em]">{rotulo}</span>
+      <b className={`font-mono text-[20px] font-bold leading-tight sm:text-[26px] ${alerta ? "text-delp-red" : "text-txt"}`}>{valor}</b>
+      <span className="text-[11px] leading-snug text-txt-2 sm:text-xs">{detalhe}</span>
+    </div>
   );
 }
+
+/** As situações da RA (coluna SITUACAO_RA) e o filtro de Pendências de cada uma. */
+const RA_NA_TELA: Record<string, { explica: string; filtro: string }> = {
+  "RA Pendente": { explica: "a RA ainda está pendente", filtro: "pendente" },
+  "RA gerada": { explica: "RA gerada e o componente ainda sem baixa", filtro: "gerada" },
+  "Subconjunto (sem RA)": { explica: "subconjunto: não leva RA", filtro: "subconjunto" },
+  "Plano sem RA": { explica: "plano de corte sem RA", filtro: "plano" },
+};
 
 export default async function Gestao({ searchParams }: { searchParams: { q?: string } }) {
   const carga = await cargaAtiva();
@@ -88,7 +90,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
   for (const r of reservas) {
     await garantirHistorico(prisma, r.id).catch((e: unknown) => console.error(`[gestao] não consegui registrar o histórico da carga ${r.id}`, e));
   }
-  const [historico, tarefas] = await Promise.all([
+  const [historico, tarefas, gestor] = await Promise.all([
     prisma.historico.findMany({ where: { projeto: carga.projeto }, orderBy: { criadoEm: "asc" } }),
     prisma.tarefa.findMany({
       where: { cargaId: carga.id },
@@ -106,16 +108,29 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         execPend: true,
       },
     }),
+    dadosGestor(prisma, carga.id),
   ]);
 
-  // Série: última carga de cada dia. Comparações: o dia anterior com carga e o ponto de ~7 dias atrás.
+  // ---------- Leitura rápida ----------
+  const avanco = avancoDe(atual);
+  const fabric = carga.comFabric ? fabricDe({ previsto: carga.totalPrevisto, esperado: carga.totalEsperado }) : null;
+  const ritmo = fabric !== null ? ritmoSaldo(avanco, fabric) : null;
+  const faltaFab = fabric !== null ? faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado) : 0;
+  const veredito: { tom: BadgeTone; texto: string } =
+    ritmo === null
+      ? { tom: "neutral", texto: "Planilha sem % de fabricação" }
+      : ritmo.ritmo === "atraso"
+        ? { tom: "danger", texto: "Saldo atrasado" }
+        : ritmo.ritmo === "a-frente"
+          ? { tom: "success", texto: "Saldo à frente da fabricação" }
+          : { tom: "success", texto: "Saldo acompanha a fabricação" };
+
   const serie = serieDiaria(historico).slice(-DIAS_GRAFICO);
   const anteriores = serie.filter((p) => p.dataRef < atual.dataRef);
   const ontem = anteriores[anteriores.length - 1];
   const limite7 = new Date(new Date(`${atual.dataRef}T12:00:00Z`).getTime() - 7 * 86400000).toISOString().slice(0, 10);
   const semana = [...anteriores].reverse().find((p) => p.dataRef <= limite7);
-
-  const avanco = avancoDe(atual);
+  const desdeOntem = ontem && dataCurta(ontem.dataRef).slice(0, 5);
   const pontos: PontoGrafico[] = serie.map((p) => ({
     data: dataCurta(p.dataRef).slice(0, 5),
     avanco: avancoDe(p),
@@ -123,8 +138,46 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
     previsto: p.previsto,
     pendentes: p.pendentes,
   }));
+  const meses: MesGrafico[] = seriePorMes(historico).map((m) => ({
+    mes: m.mes,
+    ...nomeMes(m.mes),
+    dia: dataCurta(m.dataRef).slice(0, 5),
+    previsto: m.previsto,
+    realizado: m.realizado,
+    fabric: m.esperado !== null && m.previsto > 0 ? m.esperado / m.previsto : null,
+  }));
 
-  // Avanço por grupo de código (1.xx, 2.xx...)
+  const falta = (t: { qtdRealizada: number; qtdPrevisto: number; avancoFabric: number }) =>
+    faltaParaFabricacao({ realizado: t.qtdRealizada, esperado: t.avancoFabric * t.qtdPrevisto });
+  const codigosAtras = carga.comFabric ? tarefas.filter((t) => falta(t) > 0).length : 0;
+
+  // ---------- Por que está atrasado ----------
+  const { etapas, pendenciasRa, porCodigo } = gestor;
+  const totalPendentes = pendenciasRa.reduce((s, r) => s + r.pendentes, 0);
+  const raPendente = pendenciasRa.find((r) => r.situacao === "RA Pendente")?.pendentes ?? 0;
+
+  // ---------- O que cobrar ----------
+  const cobrar: LinhaCobrar[] = tarefas.map((t) => {
+    const c = porCodigo.get(t.codTarefa);
+    return {
+      cod: t.codTarefa,
+      descricao: descricaoCurta(t.descricao),
+      desenho: t.desenho,
+      avanco: t.avanco,
+      fabric: carga.comFabric ? t.avancoFabric : null,
+      previsto: t.qtdPrevisto,
+      realizado: t.qtdRealizada,
+      falta: carga.comFabric ? falta(t) : 0,
+      pendentes: t.pendMaterial,
+      totalComp: t.totalComp,
+      raPendente: c?.raPendente ?? 0,
+      opsFabSemSaldo: c?.opsFabricadasSemSaldo ?? 0,
+    };
+  });
+
+  // ---------- Desdobramento ----------
+  const tags = rankingTags(gestor.tags, 10);
+  const todasTags = [...gestor.tags].filter((t) => t.tag !== "").sort((a, b) => faltaParaFabricacao(b) - faltaParaFabricacao(a));
   const grupos = new Map<string, { previsto: number; realizado: number; esperado: number; codigos: number }>();
   for (const t of tarefas) {
     const g = grupos.get(grupoTarefa(t.codTarefa)) ?? { previsto: 0, realizado: 0, esperado: 0, codigos: 0 };
@@ -135,29 +188,6 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
     grupos.set(grupoTarefa(t.codTarefa), g);
   }
   const porGrupo = [...grupos.entries()].sort((a, b) => compararCodigo(a[0].replace(".xx", ""), b[0].replace(".xx", "")));
-
-  const maiorSaldo = [...tarefas].sort((a, b) => b.qtdPrevisto - b.qtdRealizada - (a.qtdPrevisto - a.qtdRealizada)).slice(0, 5);
-  const maisPendentes = [...tarefas].sort((a, b) => b.pendMaterial - a.pendMaterial).slice(0, 5);
-  // Saldo × Fabricação: quanto o saldo está atrás das guias que já fecharam 100%
-  const fabric = carga.comFabric ? fabricDe({ previsto: carga.totalPrevisto, esperado: carga.totalEsperado }) : null;
-  const falta = (t: { qtdRealizada: number; qtdPrevisto: number; avancoFabric: number }) =>
-    atrasoQtd({ realizado: t.qtdRealizada, esperado: t.avancoFabric * t.qtdPrevisto });
-  const maiorAtraso = carga.comFabric
-    ? tarefas
-        .filter((t) => falta(t) > 0)
-        .sort((a, b) => falta(b) - falta(a))
-        .slice(0, 5)
-    : [];
-  const codigosEmAtraso = carga.comFabric ? tarefas.filter((t) => falta(t) > 0).length : 0;
-  const pctCodigo = (t: { avanco: number; avancoFabric: number }) =>
-    carga.comFabric ? `saldo ${pct(t.avanco)} · fabric. ${pct(t.avancoFabric)}` : pct(t.avanco);
-  // Situação como desenho: a escala de vermelhos (concluídos [2], andamento [4], sem avanço [6]), sempre com o rótulo escrito.
-  const situacoes = [
-    { rotulo: "Sem avanço", n: atual.semAvanco, classe: "pend" as const, cor: COR_ASCENT.semAvanco },
-    { rotulo: "Em andamento", n: atual.andamento, classe: "parcial" as const, cor: COR_ASCENT.andamento },
-    { rotulo: "Concluída", n: atual.concluidas, classe: "ok" as const, cor: COR_ASCENT.concluida },
-  ];
-  const desdeOntem = ontem && dataCurta(ontem.dataRef).slice(0, 5);
 
   return (
     <div className="flex flex-col gap-4">
@@ -172,6 +202,7 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
             cod: t.codTarefa,
             descricao: descricaoCurta(t.descricao),
             desenho: t.desenho,
+            tags: porCodigo.get(t.codTarefa)?.tags ?? "",
             previsto: t.qtdPrevisto,
             realizado: t.qtdRealizada,
             avanco: t.avanco,
@@ -184,35 +215,79 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           .sort((a, b) => compararCodigo(a.cod, b.cod))}
       />
 
-      {/* O indicador principal em linha própria (como era antes): as barras do saldo e da fabricação
-          precisam de largura, e na faixa fluida (base de 152px) a barra sumia. Revisão final, 16/11. */}
-      <section aria-label="Avanço do saldo">
-        <TileIndicador
-          variante="painel"
-          rotulo={`Avanço do saldo · ${carga.projeto}`}
-          valor={pct(avanco)}
-          variacaoTexto={variacao(ontem ? (avanco - avancoDe(ontem)) * 100 : null, "pp", true, desdeOntem)}
-          detalhe={`${num(atual.realizado, 1)} de ${num(atual.previsto, 1)} previsto · faltam ${num(Math.max(0, atual.previsto - atual.realizado), 1)}`}
-        >
-          <div className="mt-1.5 flex flex-col gap-1">
-            <BarrasSaldo saldo={avanco} fabric={fabric} altura="h-2.5" />
-            {fabric !== null && (
-              <LinhaFabric saldo={avanco} fabric={fabric} falta={faltaFabric(fabric, carga.totalPrevisto, carga.totalRealizado)} />
+      {/* 1. Leitura rápida: está ruim ou não, e quanto */}
+      <section aria-label="Leitura rápida" className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <Painel titulo={`Saldo × fabricação · ${carga.projeto}`} apoio="Fabricação = guias com 100% (% AVANÇO FABRIC): o saldo que já deveria ter subido.">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Badge tone={veredito.tom}>{veredito.texto}</Badge>
+              <span className="text-xs text-txt-2">
+                Atualizado em <span className="font-mono">{quando(carga.criadaEm)}</span>
+              </span>
+            </div>
+            {fabric !== null && ritmo !== null && (
+              <p className="text-[15px] leading-snug text-txt">
+                {ritmo.ritmo === "atraso" ? (
+                  <>
+                    O saldo está <b className="text-delp-red">{num(ritmo.pp, 1)} p.p. atrás</b> da fabricação: as guias já fecharam{" "}
+                    <b className="font-mono">{pct(fabric)}</b> do previsto e o saldo subido é <b className="font-mono">{pct(avanco)}</b>.
+                  </>
+                ) : (
+                  <>
+                    O saldo subido (<b className="font-mono">{pct(avanco)}</b>) acompanha a fabricação (<b className="font-mono">{pct(fabric)}</b>).
+                  </>
+                )}
+              </p>
             )}
-          </div>
-          {semana && (
-            <p className="mt-1 text-xs text-txt-2">
-              Em 7 dias: <VariacaoNaLinha v={variacao((avanco - avancoDe(semana)) * 100, "pp", true, dataCurta(semana.dataRef).slice(0, 5))} />
+            <div className="grid grid-cols-3 gap-2">
+              <Destaque rotulo="Saldo subido" valor={pct(avanco)} detalhe={`${num(atual.realizado, 1)} de ${num(atual.previsto, 1)}`} />
+              {fabric !== null && <Destaque rotulo="Fabricação" valor={pct(fabric)} detalhe={`${num(carga.totalEsperado, 1)} já deveria ter subido`} />}
+              {fabric !== null && ritmo !== null && (
+                <Destaque
+                  rotulo="Atrás da fabricação"
+                  valor={ritmo.ritmo === "atraso" ? `${num(ritmo.pp, 1)} p.p.` : "0 p.p."}
+                  detalhe={`faltam ${num(faltaFab, 1)} para acompanhar`}
+                  alerta={ritmo.ritmo === "atraso"}
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <BarrasSaldo saldo={avanco} fabric={fabric} altura="h-2.5" />
+              {fabric !== null && <LinhaFabric saldo={avanco} fabric={fabric} />}
+            </div>
+            <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-txt-2">
+              <span>
+                Desde o dia anterior: <VariacaoNaLinha v={variacao(ontem ? (avanco - avancoDe(ontem)) * 100 : null, "pp", true, desdeOntem)} />
+              </span>
+              {semana && (
+                <span>
+                  Em 7 dias: <VariacaoNaLinha v={variacao((avanco - avancoDe(semana)) * 100, "pp", true, dataCurta(semana.dataRef).slice(0, 5))} />
+                </span>
+              )}
             </p>
-          )}
-          {/* No celular a data da carga não cabe no seletor do topo: fica aqui, onde o gestor olha primeiro. */}
-          <p className="mt-1 text-xs text-txt-2">
-            Atualizado em <span className="font-mono">{quando(carga.criadaEm)}</span>
-          </p>
-        </TileIndicador>
+          </div>
+        </Painel>
+
+        <Painel titulo="Saldo do mês" apoio="Saldo subido × pendente do projeto, na última atualização de cada mês.">
+          <div className="flex flex-col gap-3">
+            <SaldoPorMes meses={meses} desde={dataCurta(historico[0]?.dataRef ?? atual.dataRef).slice(0, 5)} />
+            <div className="flex flex-col gap-2 border-t border-subtle pt-3">
+              <p className="text-sm text-txt">
+                <b>Códigos de tarefa</b>
+                {carga.comFabric && (
+                  <>
+                    {" "}
+                    · <b className="font-mono text-delp-red">{num(codigosAtras)}</b> de <span className="font-mono">{num(tarefas.length)}</span> estão atrás da
+                    fabricação
+                  </>
+                )}
+              </p>
+              <FaixaSituacao semAvanco={atual.semAvanco} andamento={atual.andamento} concluidas={atual.concluidas} />
+            </div>
+          </div>
+        </Painel>
       </section>
 
-      {/* Faixa de indicadores do Dashboard do Visto (variante fluida: os cards ocupam a largura que houver). */}
       <section aria-label="Indicadores" className="grade-indicadores fluida">
         <TileIndicador
           variante="painel"
@@ -221,13 +296,14 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           variacaoTexto={variacao(ontem ? atual.pendentes - ontem.pendentes : null, "n", false, desdeOntem)}
           detalhe={`de ${num(atual.componentes)} componentes`}
         />
-        <TileIndicador variante="painel" rotulo="Execuções pendentes" valor={num(atual.execPend, 1)} detalhe={`de ${num(atual.execucoes)} execuções`} />
+        <TileIndicador variante="painel" rotulo="RA pendente" valor={num(raPendente)} detalhe="componentes pendentes de baixa com a RA pendente" />
         <TileIndicador
           variante="painel"
-          rotulo="OPs com saldo"
-          valor={num(atual.opsComSaldo)}
-          detalhe={`de ${num(atual.ops)} OPs · ${pct(atual.ops > 0 ? atual.opsComSaldo / atual.ops : 0)}`}
+          rotulo="OPs fabricadas sem saldo"
+          valor={num(etapas.fabricadasSemSaldo)}
+          detalhe="todas as atividades apontadas e o saldo não efetivado"
         />
+        <TileIndicador variante="painel" rotulo="Execuções pendentes" valor={num(atual.execPend, 1)} detalhe={`de ${num(atual.execucoes)} execuções`} />
         <TileIndicador
           variante="painel"
           rotulo="Cortes apontados"
@@ -236,8 +312,152 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
         />
       </section>
 
-      {/* Corpo + trilho de 340px a partir de duascol (anatomia do Dashboard do Visto); no celular, coluna única. */}
-      <div className="grid grid-cols-1 gap-4 duascol:grid-cols-[minmax(0,1fr)_340px] duascol:items-start">
+      {/* 2. Por que está atrasado */}
+      <section aria-label="Por que o saldo está atrasado" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Painel
+          titulo="Em que etapa estão as OPs"
+          apoio="Cada OP dos componentes numa etapa só. Saldo efetivado = QTDE EFETIVADA ≥ PLANEJADA; as atividades vêm da aba Dados."
+        >
+          <div className="flex flex-col gap-3">
+            {etapas.fabricadasSemSaldo > 0 && (
+              <p className="rounded-btn border-l-4 border-delp-red bg-bg-2 px-3.5 py-2.5 text-sm text-txt">
+                <b className="font-mono">{num(etapas.fabricadasSemSaldo)}</b> OPs já têm todas as atividades apontadas e o saldo ainda não foi efetivado.
+              </p>
+            )}
+            <FaixaPartes
+              total={etapas.total}
+              rotuloTotal="OPs dos componentes"
+              partes={[
+                {
+                  rotulo: "Fabricadas sem saldo",
+                  explica: "todas as atividades apontadas; saldo não efetivado",
+                  n: etapas.fabricadasSemSaldo,
+                  cor: ESCALA_VERMELHOS[6],
+                  destaque: true,
+                },
+                { rotulo: "Não iniciadas", explica: "nenhuma atividade apontada", n: etapas.naoIniciadas, cor: ESCALA_VERMELHOS[4] },
+                { rotulo: "Em fabricação", explica: "parte das atividades apontada", n: etapas.emFabricacao, cor: "rgb(var(--border-med))" },
+                { rotulo: "Com saldo efetivado", n: etapas.comSaldo, cor: ESCALA_VERMELHOS[2] },
+                ...(etapas.semAtividade > 0
+                  ? [{ rotulo: "Fora da aba Dados", explica: "OP sem atividades na planilha", n: etapas.semAtividade, cor: "rgb(var(--bg-3))" }]
+                  : []),
+              ]}
+            />
+          </div>
+        </Painel>
+
+        <Painel
+          titulo="Pendentes de baixa por situação da RA"
+          apoio={`${num(totalPendentes)} componentes com APONTADO = 0. Toque numa situação para abrir a lista.`}
+          acao={{ rotulo: "Pendências", href: "/pendencias" }}
+        >
+          <BarrasLista
+            total={totalPendentes}
+            itens={pendenciasRa
+              .filter((r) => r.pendentes > 0)
+              .map((r) => ({
+                rotulo: r.situacao || "Sem situação da RA",
+                explica: RA_NA_TELA[r.situacao]?.explica,
+                n: r.pendentes,
+                href: RA_NA_TELA[r.situacao] ? `/pendencias?ra=${RA_NA_TELA[r.situacao].filtro}` : undefined,
+              }))}
+          />
+        </Painel>
+      </section>
+
+      {/* 3. O que cobrar */}
+      <Painel titulo="Códigos de tarefa para cobrar" apoio="O que mais pesa em cada leitura. Os números saem das mesmas regras do Painel.">
+        <CodigosCobrar linhas={cobrar} comFabric={carga.comFabric} />
+      </Painel>
+
+      {/* 4. Desdobramento: TAG, evolução e grupos */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+        <Painel
+          titulo={carga.comFabric ? "Saldo × fabricação por TAG" : "Saldo por TAG"}
+          apoio={
+            carga.comFabric
+              ? `As ${tags.top.length} TAGs mais atrás da fabricação (${num(tags.atrasadas)} de ${num(tags.comTag)} estão atrás). Soma dos componentes das OPs de cada TAG.`
+              : "Soma dos componentes das OPs de cada TAG."
+          }
+        >
+          <ol className="flex flex-col">
+            {tags.top.map((t) => {
+              const sTag = t.previsto > 0 ? t.realizado / t.previsto : 0;
+              const fTag = carga.comFabric && t.previsto > 0 ? t.esperado / t.previsto : null;
+              return (
+                <li
+                  key={t.tag}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t border-subtle py-2 first:border-t-0 md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_5.5rem]"
+                >
+                  <span className="min-w-0 leading-tight">
+                    <b className="break-words font-mono text-[13px] font-bold text-txt">{t.tag}</b>
+                    <span className="block font-mono text-[11px] text-txt-2">{num(t.ops)} OPs</span>
+                  </span>
+                  <span className="text-right text-xs leading-tight text-txt-2 md:order-last">
+                    {fTag !== null ? (
+                      <>
+                        faltam
+                        <b className="block font-mono text-[13px] text-txt">{num(faltaParaFabricacao(t), 1)}</b>
+                      </>
+                    ) : (
+                      <b className="font-mono text-[13px] text-txt">
+                        {num(t.realizado, 1)} de {num(t.previsto, 1)}
+                      </b>
+                    )}
+                  </span>
+                  <span className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
+                    <BarrasSaldo saldo={sTag} fabric={fTag} />
+                    <span className="font-mono text-[11px] text-txt-2">
+                      Saldo <b className="text-txt">{pct(sTag)}</b>
+                      {fTag !== null && (
+                        <>
+                          {" "}
+                          · Fabric. <b className="text-txt">{pct(fTag)}</b>
+                        </>
+                      )}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          {tags.semTag && tags.semTag.previsto > 0 && (
+            <p className="mt-2 rounded-btn bg-bg-2 px-3.5 py-2.5 text-xs text-txt">
+              <b>Sem TAG:</b> <span className="font-mono">{num(tags.semTag.previsto, 1)}</span> do previsto (
+              <span className="font-mono">{pct(carga.totalPrevisto > 0 ? tags.semTag.previsto / carga.totalPrevisto : 0)}</span>) está em{" "}
+              <span className="font-mono">{num(tags.semTag.ops)}</span> OPs sem TAG na aba Dados ou fora dela, com{" "}
+              <span className="font-mono">{pct(tags.semTag.previsto > 0 ? tags.semTag.realizado / tags.semTag.previsto : 0)}</span> do saldo subido.
+            </p>
+          )}
+          <details className="mt-2 text-sm">
+            <summary className="min-h-11 cursor-pointer py-2 font-semibold text-txt hover:text-delp-red">Ver todas as {num(todasTags.length)} TAGs</summary>
+            <div className="max-h-96 overflow-auto rounded-btn border border-subtle">
+              <table className="w-full text-left text-[13px]">
+                <thead className="sticky top-0 bg-bg-2">
+                  <tr className="text-[11px] uppercase tracking-[0.08em] text-txt-muted">
+                    <th className="px-2.5 py-2 font-semibold">TAG</th>
+                    <th className="px-2.5 py-2 text-right font-semibold">Saldo</th>
+                    {carga.comFabric && <th className="px-2.5 py-2 text-right font-semibold">Fabric.</th>}
+                    {carga.comFabric && <th className="px-2.5 py-2 text-right font-semibold">Faltam</th>}
+                    <th className="px-2.5 py-2 text-right font-semibold">OPs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todasTags.map((t) => (
+                    <tr key={t.tag} className="border-t border-subtle">
+                      <td className="break-words px-2.5 py-1.5 font-mono">{t.tag}</td>
+                      <td className="px-2.5 py-1.5 text-right font-mono">{pct(t.previsto > 0 ? t.realizado / t.previsto : 0)}</td>
+                      {carga.comFabric && <td className="px-2.5 py-1.5 text-right font-mono">{pct(t.previsto > 0 ? t.esperado / t.previsto : 0)}</td>}
+                      {carga.comFabric && <td className="px-2.5 py-1.5 text-right font-mono">{num(faltaParaFabricacao(t), 1)}</td>}
+                      <td className="px-2.5 py-1.5 text-right font-mono">{num(t.ops)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </Painel>
+
         <div className="flex min-w-0 flex-col gap-4">
           <Painel titulo="Evolução do avanço" apoio={`Última carga de cada dia, até ${DIAS_GRAFICO} dias. Toque na linha para ver o dia.`}>
             <GraficoEvolucao pontos={pontos} />
@@ -246,104 +466,16 @@ export default async function Gestao({ searchParams }: { searchParams: { q?: str
           <Painel titulo="Avanço por grupo de código">
             <ul className="flex flex-col gap-3">
               {porGrupo.map(([g, v]) => (
-                <li key={g} className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-1">
-                  <b className="min-w-11 font-mono font-bold text-txt">{g}</b>
-                  <b className="font-mono font-bold text-txt">{pct(avancoDe(v))}</b>
-                  <span className="text-[13px] text-txt-2">
-                    <span className="font-mono">
-                      {num(v.realizado, 1)} de {num(v.previsto, 1)}
-                    </span>{" "}
-                    · {num(v.codigos)} códigos
-                  </span>
-                  <span className="col-span-3 flex flex-col gap-1">
-                    <BarrasSaldo saldo={avancoDe(v)} fabric={fabric !== null && v.previsto > 0 ? fabricDe(v) : null} />
-                    {fabric !== null && v.previsto > 0 && <LinhaFabric saldo={avancoDe(v)} fabric={fabricDe(v)} />}
-                  </span>
+                <li key={g} className="grid grid-cols-[3rem_minmax(0,1fr)] items-start gap-x-2.5">
+                  <b className="pt-0.5 font-mono font-bold text-txt">{g}</b>
+                  <Avanco
+                    valor={avancoDe(v)}
+                    fabric={fabric !== null && v.previsto > 0 ? fabricDe(v) : null}
+                    rotulo={`${num(v.realizado, 1)} de ${num(v.previsto, 1)} · ${num(v.codigos)} códigos`}
+                  />
                 </li>
               ))}
             </ul>
-          </Painel>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          {fabric !== null && (
-            <Painel
-              titulo="Maior atraso do saldo"
-              apoio={`Códigos com o saldo mais atrás da fabricação (guias com 100%). ${num(codigosEmAtraso)} de ${num(tarefas.length)} códigos estão atrás.`}
-            >
-              {maiorAtraso.length === 0 ? (
-                <p className="rounded-btn bg-bg-2 px-3.5 py-3 text-sm text-txt">Nenhum código com o saldo atrás da fabricação.</p>
-              ) : (
-                <ol>
-                  {maiorAtraso.map((t) => (
-                    <ItemTop
-                      key={t.codTarefa}
-                      cod={t.codTarefa}
-                      descricao={descricaoCurta(t.descricao)}
-                      meta={
-                        <>
-                          faltam <b className="font-mono">{num(falta(t), 1)}</b> para acompanhar
-                        </>
-                      }
-                      selo={<TextoRitmo curto saldo={t.avanco} fabric={t.avancoFabric} />}
-                      percentual={pctCodigo(t)}
-                    />
-                  ))}
-                </ol>
-              )}
-            </Painel>
-          )}
-
-          <Painel titulo="Situação dos códigos de tarefa" apoio={`${num(atual.tarefas)} códigos de tarefa no projeto.`}>
-            <ul className="flex flex-col gap-3">
-              {situacoes.map((s) => (
-                <li key={s.rotulo} className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-1">
-                  <Badge tone={TOM_DA_CLASSE[s.classe]}>{s.rotulo}</Badge>
-                  <b className="font-mono font-bold text-txt">{num(s.n)}</b>
-                  <span className="font-mono text-[13px] text-txt-2">{pct(atual.tarefas > 0 ? s.n / atual.tarefas : 0)}</span>
-                  <Barra valor={atual.tarefas > 0 ? s.n / atual.tarefas : 0} cor={s.cor} className="col-span-3" />
-                </li>
-              ))}
-            </ul>
-          </Painel>
-
-          <Painel titulo="Maior saldo a subir" apoio="Códigos com mais quantidade prevista ainda sem saldo.">
-            <ol>
-              {maiorSaldo.map((t) => (
-                <ItemTop
-                  key={t.codTarefa}
-                  cod={t.codTarefa}
-                  descricao={descricaoCurta(t.descricao)}
-                  meta={
-                    <>
-                      faltam <b className="font-mono">{num(t.qtdPrevisto - t.qtdRealizada, 1)}</b> de{" "}
-                      <span className="font-mono">{num(t.qtdPrevisto, 1)}</span>
-                    </>
-                  }
-                  selo={<EtiquetaSituacao avanco={t.avanco} />}
-                  percentual={pctCodigo(t)}
-                />
-              ))}
-            </ol>
-          </Painel>
-
-          <Painel titulo="Mais pendentes de baixa" apoio="Componentes com APONTADO = 0 por código de tarefa.">
-            <ol>
-              {maisPendentes.map((t) => (
-                <ItemTop
-                  key={t.codTarefa}
-                  cod={t.codTarefa}
-                  descricao={descricaoCurta(t.descricao)}
-                  meta={
-                    <>
-                      <b className="font-mono">{num(t.pendMaterial)}</b> de <span className="font-mono">{num(t.totalComp)}</span> componentes
-                    </>
-                  }
-                  selo={<EtiquetaSituacao avanco={t.avanco} />}
-                  percentual={pctCodigo(t)}
-                />
-              ))}
-            </ol>
           </Painel>
         </div>
       </div>
